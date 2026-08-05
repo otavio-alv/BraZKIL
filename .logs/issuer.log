@@ -1,0 +1,130 @@
+[ISSUER] Identidade carregada: DID=did:brazkil:5028b7be-b861-4c01-8225-b74bdfe38be4
+[ISSUER DEBUG] Middleware de log bruto ATIVO. Defina DEBUG_LOG_REQUESTS=false para desabilitar.
+
+========================================================================
+[DEBUG ▶] GET http://127.0.0.1:8002/health
+  Headers:
+    host: 127.0.0.1:8002
+    user-agent: curl/8.21.0
+    accept: */*
+  Body: <vazio>
+[DEBUG ◀] Status: 200
+  Response Body: {"status":"online","module":"issuer","did":"did:brazkil:5028b7be-b861-4c01-8225-b74bdfe38be4"}
+========================================================================
+
+========================================================================
+[DEBUG ▶] POST http://127.0.0.1:8002/issuer/issue
+  Headers:
+    host: 127.0.0.1:8002
+    accept: */*
+    accept-encoding: gzip, deflate
+    connection: keep-alive
+    user-agent: python-httpx/0.28.1
+    content-length: 78
+    content-type: application/json
+  Body (UTF-8): {"cpf":"25774435016","name":"Manuela Elisa da Mota","birth_date":"1975-06-04"}
+[DEBUG ◀] Status: 400
+  Response Body: {"detail":"Validação Datavalid falhou (HTTP 400): {\"detail\":\"1 validation error for DatavalidRawResponse\\nrfb.situacao_cpf\\n  Input should be a valid boolean, unable to interpret input [type=bool_parsing, input_value='REGULAR', input_type=str]\\n    For further information visit https://errors.pydantic.dev/2.13/v/bool_parsing\"}"}
+========================================================================
+
+========================================================================
+[DEBUG ▶] POST http://127.0.0.1:8002/issuer/issue
+  Headers:
+    host: 127.0.0.1:8002
+    accept: */*
+    accept-encoding: gzip, deflate
+    connection: keep-alive
+    user-agent: python-httpx/0.28.1
+    content-length: 78
+    content-type: application/json
+  Body (UTF-8): {"cpf":"25774435016","name":"Manuela Elisa da Mota","birth_date":"1975-06-04"}
+
+========================================================================
+[DEBUG ▶] POST http://127.0.0.1:8002/issuer/issue
+  Headers:
+    host: 127.0.0.1:8002
+    accept: */*
+    accept-encoding: gzip, deflate
+    connection: keep-alive
+    user-agent: python-httpx/0.28.1
+    content-length: 78
+    content-type: application/json
+  Body (UTF-8): {"cpf":"25774435016","name":"Manuela Elisa da Mota","birth_date":"1975-06-04"}
+[ISSUER] Oferta de credencial dad9b222-ffe4-4756-9761-86b1ae2384ba gerada para titular validado
+[ISSUER] Política: Todos os critérios atendidos. Titular tem 51 anos.
+[DEBUG ◀] Status: 201
+  Response Body: {"credential_offer_uri":"openid-credential-offer://?credential_offer_uri=http://127.0.0.1:8002/issuer/offers/238ec4a2-79c4-4e92-b3e5-8cd3c7af117b","pre_authorized_code":"gtbR_678TwOvkv-lHbndGrBasV0AhOthLtOyfmmgl4Y","expires_in":300}
+========================================================================
+
+========================================================================
+[DEBUG ▶] POST http://127.0.0.1:8002/issuer/token
+  Headers:
+    host: 127.0.0.1:8002
+    accept: */*
+    accept-encoding: gzip, deflate
+    connection: keep-alive
+    user-agent: python-httpx/0.28.1
+    content-length: 137
+    content-type: application/json
+  Body (UTF-8): {"grant_type":"urn:ietf:params:oauth:grant-type:pre-authorized_code","pre_authorized_code":"gtbR_678TwOvkv-lHbndGrBasV0AhOthLtOyfmmgl4Y"}
+[ISSUER] Access Token emitido para credencial dad9b222-ffe4-4756-9761-86b1ae2384ba
+[DEBUG ◀] Status: 200
+  Response Body: {"access_token":"U3WQVe1pXQ3FhE1yxqm8zNYMhYTqYhwS4BfKAwZxkh5NO_AbrOEQxzd-UPxRQyj1","token_type":"Bearer","expires_in":300,"c_nonce":"16a224eb-71f0-44e4-8e47-15aa8b42f3ad","c_nonce_expires_in":300}
+========================================================================
+
+========================================================================
+[DEBUG ▶] POST http://127.0.0.1:8002/issuer/credential
+  Headers:
+    host: 127.0.0.1:8002
+    accept: */*
+    accept-encoding: gzip, deflate
+    connection: keep-alive
+    user-agent: python-httpx/0.28.1
+    authorization: Bearer U3WQVe1pXQ3FhE1yxqm8zNYMhYTqYhwS4BfKAwZxkh5NO_AbrOEQxzd-UPxRQyj1
+    content-length: 636
+    content-type: application/json
+  Body (UTF-8): {"format":"vc+sd-jwt","vct":"BraZKIL_AgeOver18","proof":{"proof_type":"jwt","jwt":"eyJhbGciOiJFUzI1NiIsImp3ayI6eyJjcnYiOiJQLTI1NiIsImt0eSI6IkVDIiwieCI6IlpZN2pfb0N0REF0THRpVnA5ckhNTE1fbDNWc0t2Uk44VUlzclBGc2p6bWMiLCJ5Ijoid1NzSm85WTJWa1VWZVI4RGJieTJ4cFRDc1V0Y3FoaTlvVXFCNGl1WHRWQSJ9LCJ0eXAiOiJvcGVuaWQ0dmNpLXByb29mK2p3dCJ9.eyJpc3MiOiJkaWQ6YnJhemtpbDowYjAzZTQ1YS0xZWM4LTRlZTctYWI3Ni1lMjdkNjQyMDdiNmEiLCJhdWQiOiJodHRwOi8vMTI3LjAuMC4xOjgwMDIiLCJpYXQiOjE3ODU5NjQxMTgsImV4cCI6MTc4NTk2NDQxOCwibm9uY2UiOiIxNmEyMjRlYi03MWYwLTQ0ZTQtOGU0Ny0xNWFhOGI0MmYzYWQifQ.nwkBR4FLDN5RyDXmDOhNOMMuqRNNJ7s346DkuJJqkGGjwXU2LRmJOzZ7IlII_bdcpLlrfsid6CrWbP3pfMKI9Q"}}
+[ISSUER AVISO] VDR retornou 200 ao registrar status da credencial
+[ISSUER] SD-JWT VC entregue ao Holder did:brazkil:0b03e45a-1ec8-4ee7-ab76-e27d64207b6a
+[DEBUG ◀] Status: 200
+  Response Body: {"format":"vc+sd-jwt","credential":"eyJhbGciOiJFUzI1NiIsInR5cCI6InZjK3NkLWp3dCJ9.eyJpc3MiOiJkaWQ6YnJhemtpbDo1MDI4YjdiZS1iODYxLTRjMDEtODIyNS1iNzRiZGZlMzhiZTQiLCJzdWIiOiJkaWQ6YnJhemtpbDowYjAzZTQ1YS0xZWM4LTRlZTctYWI3Ni1lMjdkNjQyMDdiNmEiLCJpYXQiOjE3ODU5NjQxMTgsImV4cCI6MTgxNzUwMDExOCwianRpIjoidXJuOnV1aWQ6ZGFkOWIyMjItZmZlNC00NzU2LTk3NjEtODZiMWFlMjM4NGJhIiwidmN0IjoiQnJhWktJTF9BZ2VPdmVyMTgiLCJfc2QiOlsiOGxhb1ZKSVFtM1FlY3NlOFlHVG5KdzRURHVXc0hUMHVkWl9pXzdocVFSQSIsIjV6VlV3bzZxN1JTUkpOamRhclRSTWxkRS1vYXZKa1preF9yMEFDNUxTT2MiXSwiX3NkX2FsZyI6InNoYS0yNTYiLCJjbmYiOnsiandrIjp7ImNydiI6IlAtMjU2Iiwia3R5IjoiRUMiLCJ4IjoiWlk3al9vQ3REQXRMdGlWcDlySE1MTV9sM1ZzS3ZSTjhVSXNyUEZzanptYyIsInkiOiJ3U3NKbzlZMlZrVVZlUjhEYmJ5MnhwVENzVXRjcWhpOW9VcUI0aXVYdFZBIn19LCJjcmVkZW50aWFsU3RhdHVzIjp7ImlkIjoiaHR0cDovLzEyNy4wLjAuMTo4MDAxL3Zkci9jcmVkZW50aWFscy9zdGF0dXMvZGFkOWIyMjItZmZlNC00NzU2LTk3NjEtODZiMWFlMjM4NGJhIiwidHlwZSI6IlN0YXR1c0xpc3QyMDIxIn19.h1RWFgP-hbxepawvWOtW4cidpyloX6IobqPrN5F5SUzeeWYbh2hR4dkPQVk-7nkxCsRGOUiDcdnrMUiEuU2KQA~WyJKenpEaGRIMmtEWUpvVWwzWTlTYUhBIiwiYWdlX292ZXJfMTgiLHRydWVd~WyJvTEhWX3ZrWWlxci1tRW04TkdGejN3IiwiYmlydGhkYXRlIiwiMTk3NS0wNi0wNCJd","c_nonce":"e2bbd0ee-fd0f-44e8-8348-4e79c4c6beb7","c_nonce_expires_in":300}
+========================================================================
+[ISSUER] Oferta de credencial 687e84a4-deb7-4f5d-add2-8d912084b311 gerada para titular validado
+[ISSUER] Política: Todos os critérios atendidos. Titular tem 51 anos.
+[DEBUG ◀] Status: 201
+  Response Body: {"credential_offer_uri":"openid-credential-offer://?credential_offer_uri=http://127.0.0.1:8002/issuer/offers/a41def08-0752-4cf3-ab0e-9981424852af","pre_authorized_code":"6P5ygiauZzD4IRxVkU6Pl9iXX9nfNp60Eu-DocuyGoQ","expires_in":300}
+========================================================================
+
+========================================================================
+[DEBUG ▶] POST http://127.0.0.1:8002/issuer/token
+  Headers:
+    host: 127.0.0.1:8002
+    accept: */*
+    accept-encoding: gzip, deflate
+    connection: keep-alive
+    user-agent: python-httpx/0.28.1
+    content-length: 137
+    content-type: application/json
+  Body (UTF-8): {"grant_type":"urn:ietf:params:oauth:grant-type:pre-authorized_code","pre_authorized_code":"6P5ygiauZzD4IRxVkU6Pl9iXX9nfNp60Eu-DocuyGoQ"}
+[ISSUER] Access Token emitido para credencial 687e84a4-deb7-4f5d-add2-8d912084b311
+[DEBUG ◀] Status: 200
+  Response Body: {"access_token":"1arzoLrZqr014rGIJ1ZKXquX-lXPnbNbJUjPAAvmBxnfpKIujn3Yv7NdtNjU8q8W","token_type":"Bearer","expires_in":300,"c_nonce":"8429bc53-9388-418b-a589-028097f02786","c_nonce_expires_in":300}
+========================================================================
+
+========================================================================
+[DEBUG ▶] POST http://127.0.0.1:8002/issuer/credential
+  Headers:
+    host: 127.0.0.1:8002
+    accept: */*
+    accept-encoding: gzip, deflate
+    connection: keep-alive
+    user-agent: python-httpx/0.28.1
+    authorization: Bearer 1arzoLrZqr014rGIJ1ZKXquX-lXPnbNbJUjPAAvmBxnfpKIujn3Yv7NdtNjU8q8W
+    content-length: 636
+    content-type: application/json
+  Body (UTF-8): {"format":"vc+sd-jwt","vct":"BraZKIL_AgeOver18","proof":{"proof_type":"jwt","jwt":"eyJhbGciOiJFUzI1NiIsImp3ayI6eyJjcnYiOiJQLTI1NiIsImt0eSI6IkVDIiwieCI6IjVtOTV2R25YX3VnWUlITEUwaHd0aGlDYkV3SU1UZ2IxcE5CYXRFQ05BcDAiLCJ5IjoiZ1lzczlIdGZuR2RUZ01TNzd1ek50YXRqOGoyalVRV3Q1TlFELS1wQXpQZyJ9LCJ0eXAiOiJvcGVuaWQ0dmNpLXByb29mK2p3dCJ9.eyJpc3MiOiJkaWQ6YnJhemtpbDo1ZDA5Y2Y3Mi01ZDdmLTRmYTQtYWFlOS1iNTYwNTY0YWEyYzgiLCJhdWQiOiJodHRwOi8vMTI3LjAuMC4xOjgwMDIiLCJpYXQiOjE3ODU5NjQxMTgsImV4cCI6MTc4NTk2NDQxOCwibm9uY2UiOiI4NDI5YmM1My05Mzg4LTQxOGItYTU4OS0wMjgwOTdmMDI3ODYifQ.me7cndTBYcs_SUVnq3EJ6PEeUOBP2PLOwESXED5tuR_7uRLo0zVemXTvE9PG73xxE_KDV2uk0IBflEX1NoPcfg"}}
+[ISSUER AVISO] VDR retornou 200 ao registrar status da credencial
+[ISSUER] SD-JWT VC entregue ao Holder did:brazkil:5d09cf72-5d7f-4fa4-aae9-b560564aa2c8
+[DEBUG ◀] Status: 200
+  Response Body: {"format":"vc+sd-jwt","credential":"eyJhbGciOiJFUzI1NiIsInR5cCI6InZjK3NkLWp3dCJ9.eyJpc3MiOiJkaWQ6YnJhemtpbDo1MDI4YjdiZS1iODYxLTRjMDEtODIyNS1iNzRiZGZlMzhiZTQiLCJzdWIiOiJkaWQ6YnJhemtpbDo1ZDA5Y2Y3Mi01ZDdmLTRmYTQtYWFlOS1iNTYwNTY0YWEyYzgiLCJpYXQiOjE3ODU5NjQxMTgsImV4cCI6MTgxNzUwMDExOCwianRpIjoidXJuOnV1aWQ6Njg3ZTg0YTQtZGViNy00ZjVkLWFkZDItOGQ5MTIwODRiMzExIiwidmN0IjoiQnJhWktJTF9BZ2VPdmVyMTgiLCJfc2QiOlsiWGp5U3JxZDVybzhDODVfdFh2UWN1Z3ZYRFBBUEJ1cjdQY1FDazN5Vm9LWSIsIlhNb2xVLWtFQllLbEx3UnVhQkFZVnZIVGd4WnZpZjZlZDE2SDFMTkpFa2MiXSwiX3NkX2FsZyI6InNoYS0yNTYiLCJjbmYiOnsiandrIjp7ImNydiI6IlAtMjU2Iiwia3R5IjoiRUMiLCJ4IjoiNW05NXZHblhfdWdZSUhMRTBod3RoaUNiRXdJTVRnYjFwTkJhdEVDTkFwMCIsInkiOiJnWXNzOUh0Zm5HZFRnTVM3N3V6TnRhdGo4ajJqVVFXdDVOUUQtLXBBelBnIn19LCJjcmVkZW50aWFsU3RhdHVzIjp7ImlkIjoiaHR0cDovLzEyNy4wLjAuMTo4MDAxL3Zkci9jcmVkZW50aWFscy9zdGF0dXMvNjg3ZTg0YTQtZGViNy00ZjVkLWFkZDItOGQ5MTIwODRiMzExIiwidHlwZSI6IlN0YXR1c0xpc3QyMDIxIn19.WRexQgL2rK542S25WjvyDy-h9jDaKwy0spapQfFBTYcp33C3Rf9nN4KvLC2-sZip9G7Ld5MmUQtmo1oSUHsktw~WyJWVTVzMGpUZ2RPZWRzS3B2V2xMcmF3IiwiYWdlX292ZXJfMTgiLHRydWVd~WyJTbVVvUlR3cEVsY29jQ1U0ZzhJMFNnIiwiYmlydGhkYXRlIiwiMTk3NS0wNi0wNCJd","c_nonce":"1915bb7a-acf7-4476-b054-5d346a7d993e","c_nonce_expires_in":300}
+========================================================================

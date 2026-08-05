@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BraZKIL // Terminal de Emissão de Maioridade</title>
+    <!-- Fonte Monosspace Cyberpunk: JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <!-- QR Code Generator CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+    <style>
+        :root {
+            --bg-color: #000000;
+            --term-green: #00ff00;
+            --term-dim-green: #008800;
+            --term-dark-green: #003300;
+            --term-bright-green: #66ff66;
+            --term-alert-red: #ff0033;
+            --term-warn-yellow: #ffcc00;
+            --font-stack: 'JetBrains Mono', 'Courier New', Courier, monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--term-green);
+            font-family: var(--font-stack);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Efeito de Ecrã CRT / Scanlines */
+        body::before {
+            content: " ";
+            display: block;
+            position: fixed;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
+            background-size: 100% 4px;
+            z-index: 100;
+            pointer-events: none;
+            opacity: 0.6;
+        }
+
+        /* Container Principal */
+        .terminal-container {
+            width: 100%;
+            max-width: 860px;
+            border: 2px solid var(--term-green);
+            background-color: rgba(0, 5, 0, 0.95);
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.2), inset 0 0 15px rgba(0, 255, 0, 0.1);
+            padding: 24px;
+            position: relative;
+            z-index: 10;
+        }
+
+        /* ASCII Header */
+        .ascii-header {
+            font-size: 11px;
+            line-height: 1.1;
+            white-space: pre;
+            color: var(--term-bright-green);
+            text-shadow: 0 0 5px rgba(0, 255, 0, 0.7);
+            margin-bottom: 16px;
+            overflow-x: auto;
+        }
+
+        .status-bar {
+            border-top: 1px dashed var(--term-dim-green);
+            border-bottom: 1px dashed var(--term-dim-green);
+            padding: 8px 0;
+            margin-bottom: 24px;
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            font-size: 12px;
+            color: var(--term-bright-green);
+        }
+
+        .status-item span {
+            color: #ffffff;
+            font-weight: bold;
+        }
+
+        /* TUI Box Customizada */
+        .tui-box {
+            border: 1px solid var(--term-dim-green);
+            padding: 18px;
+            margin-bottom: 24px;
+            position: relative;
+            background: rgba(0, 20, 0, 0.3);
+        }
+
+        .tui-box-title {
+            position: absolute;
+            top: -10px;
+            left: 14px;
+            background-color: var(--bg-color);
+            padding: 0 8px;
+            font-size: 12px;
+            font-weight: bold;
+            color: var(--term-bright-green);
+            letter-spacing: 1px;
+        }
+
+        /* Formulário */
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 13px;
+            margin-bottom: 6px;
+            color: var(--term-green);
+        }
+
+        .form-label::before {
+            content: "$ ";
+            color: var(--term-dim-green);
+        }
+
+        .form-control {
+            width: 100%;
+            background-color: #001100;
+            border: 1px solid var(--term-dim-green);
+            color: #ffffff;
+            font-family: var(--font-stack);
+            font-size: 14px;
+            padding: 10px 14px;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+
+        .form-control:focus {
+            border-color: var(--term-bright-green);
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.4);
+            background-color: #001a00;
+        }
+
+        /* Botões TUI */
+        .btn-cyber {
+            background-color: var(--term-dark-green);
+            border: 1px solid var(--term-green);
+            color: var(--term-bright-green);
+            font-family: var(--font-stack);
+            font-size: 14px;
+            font-weight: bold;
+            padding: 12px 24px;
+            cursor: pointer;
+            width: 100%;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            transition: all 0.2s ease;
+            display: inline-block;
+            text-decoration: none;
+        }
+
+        .btn-cyber:hover {
+            background-color: var(--term-green);
+            color: #000000;
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.8);
+        }
+
+        .btn-cyber:disabled {
+            border-color: var(--term-dim-green);
+            color: var(--term-dim-green);
+            background-color: transparent;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        /* Feedback de Logs */
+        .console-log {
+            font-size: 12px;
+            line-height: 1.5;
+            background: #000500;
+            border: 1px solid var(--term-dark-green);
+            padding: 12px;
+            max-height: 160px;
+            overflow-y: auto;
+            margin-top: 14px;
+            display: none;
+        }
+
+        .log-entry { margin-bottom: 4px; }
+        .log-entry.info { color: var(--term-dim-green); }
+        .log-entry.success { color: var(--term-bright-green); }
+        .log-entry.error { color: var(--term-alert-red); }
+
+        /* Resultado da Oferta */
+        #result-section {
+            display: none;
+        }
+
+        .qr-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            background: #ffffff;
+            border: 4px solid var(--term-green);
+            margin: 16px 0;
+            width: fit-content;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .uri-box {
+            word-break: break-all;
+            font-size: 11px;
+            padding: 12px;
+            background-color: #001000;
+            border: 1px solid var(--term-dim-green);
+            color: var(--term-bright-green);
+            margin: 14px 0;
+        }
+
+        .action-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 14px;
+        }
+
+        @media (max-width: 600px) {
+            .action-buttons { grid-template-columns: 1fr; }
+            .ascii-header { font-size: 8px; }
+        }
+
+        /* Cursor Piscante */
+        .blink {
+            animation: blinker 1s cubic-bezier(0.5, 0, 1, 1) infinite;
+        }
+        @keyframes blinker { 50% { opacity: 0; } }
+    </style>
+</head>
+<body>
+
+    <div class="terminal-container">
+        
+        <!-- Header ASCII -->
+        <div class="ascii-header">
+██████╗ ██████╗  █████╗ ███████╗██╗  ██╗██╗██╗
+██╔══██╗██╔══██╗██╔══██╗╚══███╔╝██║ ██╔╝██║██║
+██████╔╝██████╔╝███████║  ███╔╝ █████═╝ ██║██║
+██╔══██╗██╔══██╗██╔══██║ ███╔╝  ██╔═██╗ ██║██║
+██████╔╝██║  ██║██║  ██║███████╗██║  ██╗██║███████╗
+╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚═╝╚══════╝</div>
+
+        <!-- Barra de Status -->
+        <div class="status-bar">
+            <div class="status-item">NODE: <span>[ONLINE]</span></div>
+            <div class="status-item">PROTOCOL: <span>OID4VCI Pre-Auth</span></div>
+            <div class="status-item">DATAVALID: <span>[ACTIVE]</span></div>
+            <div class="status-item">VDR: <span>[CONNECTED]</span></div>
+        </div>
+
+        <!-- Seção 0: Perfis de Teste -->
+        <div class="tui-box" id="presets-box">
+            <div class="tui-box-title">┌─ [00] TEST PROFILES ─┐</div>
+            <p style="font-size: 12px; margin-bottom: 15px; color: #aaa;">
+                > SELECIONE UM PERFIL PARA PREENCHER O FORMULÁRIO (Dados do Datavalid Mock)
+            </p>
+            <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px;">
+                <button type="button" class="btn-cyber" style="border-color: #00FF00; color: #00FF00;" onclick="loadProfile('25774435016', 'Manuela Elisa da Mota', '04/06/1975')">
+                    [1] VÁLIDO: Manuela Elisa da Mota
+                </button>
+                <button type="button" class="btn-cyber" style="border-color: #00FF00; color: #00FF00;" onclick="loadProfile('11295395045', 'Isabelle Antonella Teixeira', '12/11/1982')">
+                    [2] VÁLIDO: Isabelle Antonella Teixeira
+                </button>
+                <button type="button" class="btn-cyber" style="border-color: #ffaa00; color: #ffaa00;" onclick="loadProfile('00000000000', 'Tiago Guilherme Drumond', '30/07/1947')">
+                    [3] ERRO (CPF Inválido): Esperado CPF 19661368031
+                </button>
+                <button type="button" class="btn-cyber" style="border-color: #ffaa00; color: #ffaa00;" onclick="loadProfile('56128211070', 'João Carlos Souza', '07/04/1954')">
+                    [4] ERRO (Nome Errado): Esperado Gustavo Tomás Viana
+                </button>
+                <button type="button" class="btn-cyber" style="border-color: #ffaa00; color: #ffaa00;" onclick="loadProfile('29268620081', 'Vinicius Levi da Costa', '01/01/2000')">
+                    [5] ERRO (Data Nasc. Inválida): Esperado 25/08/1968
+                </button>
+            </div>
+        </div>
+
+        <!-- Seção 1: Formulário de Coleta -->
+        <div class="tui-box" id="form-box">
+            <div class="tui-box-title">┌─ [01] IDENTIFICATION INGRESS ─┐</div>
+            
+            <form id="issuance-form">
+                <div class="form-group">
+                    <label class="form-label" for="cpf">CPF (SOMENTE NÚMEROS):</label>
+                    <input type="text" id="cpf" class="form-control" placeholder="000.000.000-00" required maxlength="14" value="25774435016" autocomplete="off">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="name">NOME COMPLETO DA PESSOA FÍSICA:</label>
+                    <input type="text" id="name" class="form-control" placeholder="EX: MANUELA ELISA DA MOTA" required value="Manuela Elisa da Mota" autocomplete="off">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="birth_date">DATA DE NASCIMENTO (DD/MM/AAAA):</label>
+                    <input type="text" id="birth_date" class="form-control" placeholder="DD/MM/AAAA" required maxlength="10" value="04/06/1975" autocomplete="off">
+                </div>
+
+                <button type="submit" id="btn-submit" class="btn-cyber">
+                    EXECUTE ISSUANCE PROTOCOL <span class="blink">_</span>
+                </button>
+            </form>
+
+            <div class="console-log" id="console-log"></div>
+        </div>
+
+        <!-- Seção 2: Exibição da Oferta de Credencial -->
+        <div class="tui-box" id="result-section">
+            <div class="tui-box-title">┌─ [02] CREDENTIAL OFFER GENERATED ─┐</div>
+            
+            <p style="font-size: 12px; margin-bottom: 10px;">
+                > VALIDAÇÃO AUTORITATIVA CONCLUÍDA COM SUCESSO.<br>
+                > ESCANEE O QR CODE ABAIXO OU COPIE O URI DA OFERTA PARA A CARTEIRA <strong>WALT.ID</strong>:
+            </p>
+
+            <div class="qr-wrapper">
+                <div id="qrcode"></div>
+            </div>
+
+            <div class="form-label">CREDENTIAL OFFER URI (OID4VCI):</div>
+            <div class="uri-box" id="uri-display">--</div>
+
+            <div class="action-buttons">
+                <button class="btn-cyber" id="btn-copy">COPIAR OFFER URI</button>
+                <a class="btn-cyber" id="btn-walt" href="https://wallet.walt.id/" target="_blank" rel="noopener noreferrer">ABRIR WALT.ID DEMO ➔</a>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const form = document.getElementById('issuance-form');
+        const btnSubmit = document.getElementById('btn-submit');
+        const consoleLog = document.getElementById('console-log');
+        const resultSection = document.getElementById('result-section');
+        const uriDisplay = document.getElementById('uri-display');
+        const btnCopy = document.getElementById('btn-copy');
+        const cpfInput = document.getElementById('cpf');
+
+        const birthDateInput = document.getElementById('birth_date');
+
+        // Máscara de CPF
+        cpfInput.addEventListener('input', (e) => {
+            let v = e.target.value.replace(/\D/g, '');
+            if (v.length > 11) v = v.slice(0, 11);
+            v = v.replace(/(\d{3})(\d)/, '$1.$2');
+            v = v.replace(/(\d{3})(\d)/, '$1.$2');
+            v = v.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+            e.target.value = v;
+        });
+
+        // Máscara de Data de Nascimento (DD/MM/AAAA)
+        birthDateInput.addEventListener('input', (e) => {
+            let v = e.target.value.replace(/\D/g, '');
+            if (v.length > 8) v = v.slice(0, 8);
+            if (v.length > 4) {
+                v = v.replace(/(\d{2})(\d{2})(\d{1,4})/, '$1/$2/$3');
+            } else if (v.length > 2) {
+                v = v.replace(/(\d{2})(\d{1,2})/, '$1/$2');
+            }
+            e.target.value = v;
+        });
+        function loadProfile(cpf, name, birth_date) {
+            cpfInput.value = cpf;
+            cpfInput.dispatchEvent(new Event('input'));
+            
+            document.getElementById('name').value = name;
+            
+            birthDateInput.value = birth_date;
+            birthDateInput.dispatchEvent(new Event('input'));
+
+            log(`Perfil de teste carregado: ${name}`, 'info');
+        }
+
+        function log(msg, type = 'info') {
+            consoleLog.style.display = 'block';
+            const div = document.createElement('div');
+            div.className = `log-entry ${type}`;
+            const time = new Date().toISOString().split('T')[1].slice(0, 8);
+            div.textContent = `[${time}] ${msg}`;
+            consoleLog.appendChild(div);
+            consoleLog.scrollTop = consoleLog.scrollHeight;
+        }
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            btnSubmit.disabled = true;
+            btnSubmit.innerHTML = 'PROCESSING AUTHORIZATION... <span class="blink">█</span>';
+            consoleLog.innerHTML = '';
+            resultSection.style.display = 'none';
+
+            const rawCpf = cpfInput.value.replace(/\D/g, '');
+            const name = document.getElementById('name').value.trim();
+            const rawBirthDate = birthDateInput.value;
+
+            // Converter DD/MM/AAAA para YYYY-MM-DD (ISO 8601 exigido pela API)
+            const birthParts = rawBirthDate.split(/[\/\-]/);
+            if (birthParts.length !== 3 || birthParts[0].length !== 2 || birthParts[1].length !== 2 || birthParts[2].length !== 4) {
+                throw new Error("Formato de data de nascimento inválido. Use DD/MM/AAAA.");
+            }
+            const isoBirthDate = `${birthParts[2]}-${birthParts[1]}-${birthParts[0]}`;
+
+            log(`Iniciando protocolo de requisição...`, 'info');
+            log(`Enviando consulta cadastral para o Middleware BraZKIL...`, 'info');
+
+            try {
+                // Requisição ao backend do Issuer
+                const resp = await fetch('/issuer/issue', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        cpf: rawCpf,
+                        name: name,
+                        birth_date: isoBirthDate
+                    })
+                });
+
+                const data = await resp.json();
+
+                if (!resp.ok) {
+                    throw new Error(data.detail || `HTTP ${resp.status}`);
+                }
+
+                log(`Validação Datavalid concluída com sucesso!`, 'success');
+                log(`Política de maioridade (18+): APROVADA`, 'success');
+                log(`Credential Offer URI gerado com sucesso.`, 'success');
+
+                // Exibir resultado
+                uriDisplay.textContent = data.credential_offer_uri;
+                
+                // Limpar QR Code anterior se houver
+                document.getElementById('qrcode').innerHTML = '';
+                new QRCode(document.getElementById('qrcode'), {
+                    text: data.credential_offer_uri,
+                    width: 200,
+                    height: 200,
+                    colorDark : "#000000",
+                    colorLight : "#ffffff",
+                    correctLevel : QRCode.CorrectLevel.M
+                });
+
+                resultSection.style.display = 'block';
+                resultSection.scrollIntoView({ behavior: 'smooth' });
+
+            } catch (err) {
+                log(`FALHA NA EMISSÃO: ${err.message}`, 'error');
+            } finally {
+                btnSubmit.disabled = false;
+                btnSubmit.innerHTML = 'EXECUTE ISSUANCE PROTOCOL <span class="blink">_</span>';
+            }
+        });
+
+        // Botão de Copiar
+        btnCopy.addEventListener('click', () => {
+            const textToCopy = uriDisplay.textContent;
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                const originalText = btnCopy.textContent;
+                btnCopy.textContent = 'URI COPIADO! ✔';
+                setTimeout(() => btnCopy.textContent = originalText, 2000);
+            });
+        });
+    </script>
+</body>
+</html>

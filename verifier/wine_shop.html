@@ -1,0 +1,1164 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Autentico Vini — Adega Fine Wines</title>
+    <meta name="description" content="Adega de vinhos finos e coleções exclusivas. Verificação de maioridade via tecnologia autossoberana BraZKIL.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+    <style>
+        /* ================================================================
+           Design System — Autentico Vini — Realist Fine Wine Store
+        ================================================================ */
+        :root {
+            --bg-dark: #0d070a;
+            --bg-surface: #160c11;
+            --bg-surface-raised: #1f1219;
+            --border-subtle: rgba(255, 255, 255, 0.08);
+            --border-accent: rgba(201, 168, 76, 0.3);
+            
+            --brand-wine: #5c1b36;
+            --brand-wine-hover: #732244;
+            --brand-gold: #c9a84c;
+            --brand-gold-muted: #9e8235;
+            
+            --text-heading: #f5efe8;
+            --text-body: #d4c5bd;
+            --text-muted: #8c7a72;
+            
+            --status-green-bg: rgba(34, 76, 42, 0.25);
+            --status-green-text: #7cdb8c;
+            --status-green-border: rgba(124, 219, 140, 0.3);
+            
+            --font-serif: 'Cormorant Garamond', Georgia, serif;
+            --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-body);
+            font-family: var(--font-sans);
+            min-height: 100vh;
+            line-height: 1.5;
+            overflow-x: hidden;
+        }
+
+        /* ================================================================
+           Header & Navigation (Real E-Commerce Style)
+        ================================================================ */
+        header {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            z-index: 100;
+            background: rgba(13, 7, 10, 0.92);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .header-container {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 16px 32px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .brand-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+        }
+
+        .brand-mark {
+            width: 36px;
+            height: 36px;
+            background: var(--brand-wine);
+            border: 1px solid var(--border-accent);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .brand-title {
+            font-family: var(--font-serif);
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text-heading);
+            letter-spacing: 0.04em;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 28px;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: var(--text-body);
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 400;
+            transition: color 0.2s;
+        }
+
+        .nav-links a:hover {
+            color: var(--brand-gold);
+        }
+
+        .nav-meta {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .security-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 14px;
+            background: rgba(201, 168, 76, 0.08);
+            border: 1px solid rgba(201, 168, 76, 0.2);
+            border-radius: 20px;
+            font-size: 0.75rem;
+            color: var(--brand-gold);
+        }
+
+        .indicator-dot {
+            width: 7px; height: 7px;
+            border-radius: 50%;
+            background: var(--brand-gold);
+        }
+
+        /* ================================================================
+           Screen Containers
+        ================================================================ */
+        .screen {
+            display: none;
+            min-height: 100vh;
+            padding-top: 80px;
+        }
+
+        .screen.active { display: flex; flex-direction: column; }
+
+        /* ================================================================
+           SCREEN 1 — Age Verification Gate (Clean & Solid)
+        ================================================================ */
+        #screen-gate {
+            align-items: center;
+            justify-content: center;
+            padding: 120px 24px 80px;
+            text-align: center;
+        }
+
+        .gate-card {
+            max-width: 540px;
+            width: 100%;
+            background: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            padding: 48px 40px;
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+        }
+
+        .gate-icon {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 24px;
+            background: rgba(92, 27, 54, 0.3);
+            border: 1px solid var(--border-accent);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+        }
+
+        .gate-heading {
+            font-family: var(--font-serif);
+            font-size: 2.2rem;
+            font-weight: 500;
+            color: var(--text-heading);
+            margin-bottom: 12px;
+        }
+
+        .gate-subheading {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-bottom: 32px;
+            line-height: 1.6;
+        }
+
+        .privacy-box {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            padding: 20px;
+            text-align: left;
+            margin-bottom: 32px;
+        }
+
+        .privacy-box-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--brand-gold);
+            margin-bottom: 8px;
+        }
+
+        .privacy-box-body {
+            font-size: 0.82rem;
+            color: var(--text-body);
+            line-height: 1.6;
+        }
+
+        /* Solid Buttons */
+        .btn-solid-primary {
+            width: 100%;
+            padding: 14px 28px;
+            background: var(--brand-wine);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 6px;
+            color: var(--text-heading);
+            font-family: var(--font-sans);
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s, border-color 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-solid-primary:hover {
+            background: var(--brand-wine-hover);
+            border-color: var(--brand-gold);
+        }
+
+        .btn-outline-secondary {
+            width: 100%;
+            padding: 12px 24px;
+            background: transparent;
+            border: 1px solid var(--border-subtle);
+            border-radius: 6px;
+            color: var(--text-body);
+            font-family: var(--font-sans);
+            font-size: 0.85rem;
+            font-weight: 400;
+            cursor: pointer;
+            transition: border-color 0.2s, color 0.2s;
+            margin-top: 12px;
+        }
+
+        .btn-outline-secondary:hover {
+            border-color: var(--text-body);
+            color: var(--text-heading);
+        }
+
+        /* ================================================================
+           SCREEN 2 — Verification Steps Modal
+        ================================================================ */
+        #screen-verify {
+            align-items: center;
+            justify-content: center;
+            padding: 120px 24px 80px;
+        }
+
+        .verify-card {
+            max-width: 600px;
+            width: 100%;
+            background: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            padding: 40px;
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+        }
+
+        .verify-card-header {
+            margin-bottom: 28px;
+            text-align: center;
+        }
+
+        .verify-card-title {
+            font-family: var(--font-serif);
+            font-size: 1.8rem;
+            color: var(--text-heading);
+            margin-bottom: 6px;
+        }
+
+        .verify-tabs-bar {
+            display: flex;
+            border-bottom: 1px solid var(--border-subtle);
+            margin-bottom: 24px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 12px;
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid transparent;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            font-family: var(--font-sans);
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .tab-btn.active {
+            color: var(--brand-gold);
+            border-bottom-color: var(--brand-gold);
+        }
+
+        .tab-pane { display: none; }
+        .tab-pane.active { display: block; }
+
+        .code-box {
+            background: #080406;
+            border: 1px solid var(--border-subtle);
+            border-radius: 6px;
+            padding: 14px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.78rem;
+            color: var(--brand-gold);
+            word-break: break-all;
+            margin-bottom: 16px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 10px 14px;
+            background: #080406;
+            border: 1px solid var(--border-subtle);
+            border-radius: 6px;
+            color: var(--text-heading);
+            font-size: 0.85rem;
+            font-family: var(--font-sans);
+            outline: none;
+            margin-bottom: 14px;
+        }
+
+        .form-input:focus {
+            border-color: var(--brand-gold);
+        }
+
+        /* Steps Animation */
+        .step-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 12px;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-subtle);
+            margin-bottom: 8px;
+            font-size: 0.82rem;
+        }
+
+        .step-row.pass { border-color: var(--status-green-border); background: var(--status-green-bg); }
+        .step-row.fail { border-color: rgba(220, 53, 69, 0.3); background: rgba(220, 53, 69, 0.1); }
+
+        /* ================================================================
+           SCREEN 3 — Access Denied
+        ================================================================ */
+        #screen-denied {
+            align-items: center;
+            justify-content: center;
+            padding: 120px 24px 80px;
+            text-align: center;
+        }
+
+        /* ================================================================
+           SCREEN 4 — Wine Catalog (Real Fine Wine Store Layout)
+        ================================================================ */
+        #screen-catalog {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .verification-success-bar {
+            background: #122416;
+            border-bottom: 1px solid #1e4526;
+            padding: 14px 32px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.82rem;
+            color: #8be497;
+        }
+
+        .success-bar-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .catalog-hero-section {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 48px 32px 32px;
+            width: 100%;
+        }
+
+        .catalog-title {
+            font-family: var(--font-serif);
+            font-size: 2.8rem;
+            font-weight: 500;
+            color: var(--text-heading);
+            margin-bottom: 8px;
+        }
+
+        .catalog-subtitle {
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            max-width: 600px;
+        }
+
+        .wine-grid-container {
+            max-width: 1280px;
+            margin: 0 auto 60px;
+            padding: 0 32px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 28px;
+            width: 100%;
+        }
+
+        .wine-product-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            overflow: hidden;
+            transition: border-color 0.2s, transform 0.2s;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .wine-product-card:hover {
+            border-color: rgba(201, 168, 76, 0.4);
+            transform: translateY(-4px);
+        }
+
+        .wine-card-media {
+            height: 220px;
+            background: #12090e;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 4rem;
+            position: relative;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .wine-origin-tag {
+            position: absolute;
+            top: 12px; left: 12px;
+            font-size: 0.7rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--brand-gold);
+            background: rgba(13, 7, 10, 0.85);
+            padding: 4px 10px;
+            border-radius: 4px;
+            border: 1px solid var(--border-subtle);
+        }
+
+        .wine-card-details {
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+        }
+
+        .wine-name {
+            font-family: var(--font-serif);
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: var(--text-heading);
+            margin-bottom: 4px;
+        }
+
+        .wine-vintage {
+            font-size: 0.8rem;
+            color: var(--brand-gold);
+            margin-bottom: 12px;
+        }
+
+        .wine-desc {
+            font-size: 0.82rem;
+            color: var(--text-body);
+            line-height: 1.5;
+            margin-bottom: 20px;
+            flex: 1;
+        }
+
+        .wine-price-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: auto;
+            padding-top: 12px;
+            border-top: 1px solid var(--border-subtle);
+        }
+
+        .wine-price-value {
+            font-family: var(--font-serif);
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: var(--text-heading);
+        }
+
+        .btn-add-cart-solid {
+            padding: 8px 16px;
+            background: var(--brand-wine);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            color: var(--text-heading);
+            font-size: 0.8rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-add-cart-solid:hover {
+            background: var(--brand-wine-hover);
+        }
+
+        /* ================================================================
+           AUDIT PANEL — Clean & Structured Step-by-Step Log Below Catalog
+        ================================================================ */
+        .audit-container-section {
+            background: var(--bg-surface-raised);
+            border-top: 1px solid var(--border-subtle);
+            padding: 48px 32px;
+            width: 100%;
+        }
+
+        .audit-inner-content {
+            max-width: 1280px;
+            margin: 0 auto;
+        }
+
+        .audit-header-flex {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+            border-bottom: 1px solid var(--border-subtle);
+            padding-bottom: 16px;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .audit-section-title {
+            font-family: var(--font-serif);
+            font-size: 1.8rem;
+            color: var(--text-heading);
+            font-weight: 500;
+        }
+
+        .audit-section-subtitle {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .audit-tab-selector {
+            display: flex;
+            gap: 8px;
+            background: var(--bg-dark);
+            padding: 4px;
+            border-radius: 6px;
+            border: 1px solid var(--border-subtle);
+        }
+
+        .audit-selector-btn {
+            padding: 6px 14px;
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            font-family: var(--font-sans);
+            font-weight: 500;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .audit-selector-btn.active {
+            background: var(--brand-wine);
+            color: var(--text-heading);
+        }
+
+        .audit-content-panel { display: none; }
+        .audit-content-panel.active { display: block; }
+
+        /* Privacy Banner Callout inside Audit Panel */
+        .privacy-highlight-banner {
+            background: rgba(201, 168, 76, 0.06);
+            border: 1px solid var(--border-accent);
+            border-radius: 6px;
+            padding: 16px 20px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .privacy-highlight-text {
+            font-size: 0.85rem;
+            color: var(--text-body);
+            line-height: 1.5;
+        }
+
+        .privacy-highlight-text strong {
+            color: var(--brand-gold);
+        }
+
+        .flow-log-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .flow-log-card {
+            background: var(--bg-dark);
+            border: 1px solid var(--border-subtle);
+            border-radius: 6px;
+            padding: 12px 16px;
+            font-size: 0.82rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .flow-log-index {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: rgba(201, 168, 76, 0.15);
+            color: var(--brand-gold);
+            font-size: 0.75rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .checks-grid-layout {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+        }
+
+        .crypto-check-card {
+            background: var(--bg-dark);
+            border: 1px solid var(--status-green-border);
+            border-radius: 6px;
+            padding: 16px;
+        }
+
+        .crypto-check-title {
+            font-weight: 600;
+            font-size: 0.88rem;
+            color: var(--text-heading);
+            margin-bottom: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .crypto-check-desc {
+            font-size: 0.8rem;
+            color: var(--text-body);
+            line-height: 1.5;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header-container { padding: 12px 16px; }
+            .nav-links { display: none; }
+            .wine-grid-container { padding: 0 16px; grid-template-columns: 1fr; }
+            .catalog-hero-section { padding: 32px 16px; }
+            .audit-container-section { padding: 32px 16px; }
+            .audit-header-flex { flex-direction: column; align-items: flex-start; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Real E-Commerce Navigation -->
+<header>
+    <div class="header-container">
+        <a href="#" class="brand-logo" onclick="goHome(); return false;">
+            <div class="brand-mark">🍷</div>
+            <span class="brand-title">Autentico Vini</span>
+        </a>
+        <ul class="nav-links">
+            <li><a href="#" onclick="goHome(); return false;">Coleções</a></li>
+            <li><a href="#" onclick="goHome(); return false;">Bordeaux</a></li>
+            <li><a href="#" onclick="goHome(); return false;">Champagnes</a></li>
+            <li><a href="#" onclick="goHome(); return false;">Adega Privada</a></li>
+        </ul>
+        <div class="nav-meta">
+            <div class="security-indicator">
+                <span class="indicator-dot"></span>
+                BraZKIL Verified Store
+            </div>
+        </div>
+    </div>
+</header>
+
+<!-- ================================================================
+     SCREEN 1 — Age Verification Gate (Clean Solid Style)
+================================================================ -->
+<div id="screen-gate" class="screen active">
+    <div class="gate-card">
+        <div class="gate-icon">🍷</div>
+        <h1 class="gate-heading">Autentico Vini</h1>
+        <p class="gate-subheading">Vinhos raros e coleções exclusivas de pequenas vinícolas europeias.</p>
+
+        <div class="privacy-box">
+            <div class="privacy-box-header">
+                <span>🛡️</span>
+                <span>Verificação de Maioridade (ECA Digital)</span>
+            </div>
+            <div class="privacy-box-body">
+                Para ter acesso ao nosso catálogo de bebidas alcoólicas, é necessária a comprovação de maioridade (18+).
+                <br><br>
+                Utilizamos o padrão <strong>BraZKIL com Divulgação Seletiva (SD-JWT VC)</strong>.
+                Sua idade é confirmada <strong>sem revelar sua data de nascimento</strong> ou qualquer outro dado pessoal.
+            </div>
+        </div>
+
+        <button class="btn-solid-primary" onclick="startVerification()">
+            Verificar Idade com Credencial BraZKIL
+        </button>
+        <button class="btn-outline-secondary" onclick="startSimulation()">
+            Demonstração Automática (PoC)
+        </button>
+    </div>
+</div>
+
+<!-- ================================================================
+     SCREEN 2 — Verification Active
+================================================================ -->
+<div id="screen-verify" class="screen">
+    <div class="verify-card">
+        <div class="verify-card-header">
+            <h2 class="verify-card-title">Verificação de Idade</h2>
+            <p style="font-size:0.82rem; color:var(--text-muted);">Protocolo OID4VP · SD-JWT VC</p>
+        </div>
+
+        <div class="verify-tabs-bar">
+            <button class="tab-btn active" id="tab-btn-manual" onclick="switchTab('manual')">Colar VP Token</button>
+            <button class="tab-btn" id="tab-btn-simulate" onclick="switchTab('simulate')">Simulação Automática</button>
+        </div>
+
+        <!-- Manual Tab -->
+        <div class="tab-pane active" id="tab-manual">
+            <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:4px;">SESSION ID</div>
+            <div class="code-box" id="display-session-id">Gerando sessão...</div>
+
+            <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:4px;">DESAFIO (NONCE)</div>
+            <div class="code-box" id="display-nonce">—</div>
+
+            <label style="font-size:0.8rem; color:var(--text-body); display:block; margin-bottom:6px;">
+                VP Token (<code>SD-JWT~disclosure~KB-JWT</code>):
+            </label>
+            <textarea id="vp-token-input" class="form-input" style="height:110px; font-family:monospace;" placeholder="eyJ..."></textarea>
+
+            <button class="btn-solid-primary" onclick="submitVpToken()">Confirmar Apresentação</button>
+        </div>
+
+        <!-- Simulation Tab -->
+        <div class="tab-pane" id="tab-simulate">
+            <div style="font-size:0.85rem; color:var(--text-body); margin-bottom:16px;">
+                Executa o ciclo end-to-end simulado da credencial BraZKIL:
+            </div>
+            <input type="text" id="sim-cpf" class="form-input" value="25774435016" placeholder="CPF">
+            <input type="text" id="sim-birth" class="form-input" value="1975-06-04" placeholder="Data Nasc.">
+            <input type="text" id="sim-name" class="form-input" value="Manuela Elisa da Mota" placeholder="Nome Completo">
+
+            <button class="btn-solid-primary" onclick="runSimulation()">Executar Simulação</button>
+            <div id="sim-log" class="code-box" style="display:none; margin-top:16px; max-height:140px; overflow-y:auto;"></div>
+        </div>
+
+        <!-- Progress Steps -->
+        <div id="verify-progress" class="hidden" style="margin-top:24px;">
+            <div style="text-align:center; padding:16px 0;">
+                <div style="font-size:1.1rem; color:var(--text-heading); margin-bottom:4px;">Processando Verificação...</div>
+                <div style="font-size:0.8rem; color:var(--text-muted);" id="verify-progress-text">Validação em 4 etapas</div>
+            </div>
+            <div id="steps-container"></div>
+        </div>
+    </div>
+
+    <div style="margin-top:20px;">
+        <button class="btn-outline-secondary" onclick="goHome()" style="width:auto; padding:8px 20px;">← Voltar</button>
+    </div>
+</div>
+
+<!-- ================================================================
+     SCREEN 3 — Access Denied
+================================================================ -->
+<div id="screen-denied" class="screen">
+    <div class="gate-card">
+        <div style="font-size:3rem; margin-bottom:16px;">🚫</div>
+        <h2 class="gate-heading" style="color:#e25c6e;">Acesso Não Autorizado</h2>
+        <p class="gate-subheading" id="denied-reason">Não foi possível confirmar o predicado de maioridade.</p>
+
+        <div id="denied-steps" style="margin-bottom:24px; text-align:left;"></div>
+
+        <button class="btn-solid-primary" onclick="startVerification()">Tentar Novamente</button>
+        <button class="btn-outline-secondary" onclick="goHome()">Voltar ao Início</button>
+    </div>
+</div>
+
+<!-- ================================================================
+     SCREEN 4 — Wine Catalog & Audit Panel
+================================================================ -->
+<div id="screen-catalog" class="screen">
+
+    <!-- Top Success Banner -->
+    <div class="verification-success-bar">
+        <div class="success-bar-info">
+            <span>✅</span>
+            <span><strong>Maioridade Verificada:</strong> <code>age_over_18 = true</code> (birthdate preservada em sigilo)</span>
+        </div>
+        <div id="proof-holder-did" style="font-family:monospace; opacity:0.8;">DID: —</div>
+    </div>
+
+    <!-- Catalog Hero -->
+    <div class="catalog-hero-section">
+        <h1 class="catalog-title">Nossa Adega Premium</h1>
+        <p class="catalog-subtitle">Coleção exclusiva de vinhos armazenados com controle rigoroso de temperatura e umidade.</p>
+    </div>
+
+    <!-- Wine Product Grid -->
+    <div class="wine-grid-container" id="wine-grid"></div>
+
+    <!-- ============================================================
+         AUDIT PANEL — Passo a Passo do Fluxo & Validações Criptográficas
+    ============================================================ -->
+    <div class="audit-container-section">
+        <div class="audit-inner-content">
+            
+            <div class="audit-header-flex">
+                <div>
+                    <h2 class="audit-section-title">Painel de Conformidade e Auditabilidade BraZKIL</h2>
+                    <p class="audit-section-subtitle">Rastreabilidade completa da verificação e validação de privacidade por design.</p>
+                </div>
+                <div class="audit-tab-selector">
+                    <button class="audit-selector-btn active" onclick="switchAuditTab('flow')">📜 Fluxo da Simulação (8 Passos)</button>
+                    <button class="audit-selector-btn" onclick="switchAuditTab('checks')">🔐 Validações do Verifier (4 Checks)</button>
+                    <button class="audit-selector-btn" onclick="switchAuditTab('json')">📄 Payload JSON Completo</button>
+                </div>
+            </div>
+
+            <!-- Privacy Highlight Callout -->
+            <div class="privacy-highlight-banner">
+                <span style="font-size:1.4rem;">🔒</span>
+                <div class="privacy-highlight-text">
+                    <strong>Garantia de Divulgação Seletiva:</strong> Apenas o predicado <code>age_over_18 == true</code> foi revelado ao Verificador.
+                    A data de nascimento (<code>birthdate</code>) do titular permaneceu de forma segura nos <em>disclosures</em> não revelados, cumprindo os princípios de finalidade e minimização da LGPD e ECA Digital.
+                </div>
+            </div>
+
+            <!-- Tab 1: Flow Log -->
+            <div class="audit-content-panel active" id="audit-panel-flow">
+                <div class="flow-log-list" id="audit-flow-timeline"></div>
+            </div>
+
+            <!-- Tab 2: Crypto Checks -->
+            <div class="audit-content-panel" id="audit-panel-checks">
+                <div class="checks-grid-layout" id="audit-checks-grid"></div>
+            </div>
+
+            <!-- Tab 3: JSON Inspector -->
+            <div class="audit-content-panel" id="audit-panel-json">
+                <div class="code-box" id="audit-json-box" style="max-height:300px; overflow-y:auto; font-size:0.75rem;">{}</div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+// ============================================================
+// Estado Global & Dados dos Vinhos
+// ============================================================
+let currentSessionId = null;
+let currentNonce = null;
+let lastVerificationResult = null;
+const VERIFIER_URL = window.location.origin;
+
+const WINES = [
+    {
+        emoji: '🍷', origin: 'Bordeaux, França',
+        name: 'Château Margaux', vintage: '2019 · Grand Cru Classé',
+        desc: 'Estrutura majestosa com taninos sedosos, notas de cassis, violeta e especiarias. Ícone do terroir de Bordeaux.',
+        price: 'R$ 2.800'
+    },
+    {
+        emoji: '🍾', origin: 'Napa Valley, EUA',
+        name: 'Opus One', vintage: '2020 · Mondavi & Rothschild',
+        desc: 'Blend sofisticado de Cabernet Sauvignon com aromas de groselha preta, cedro e notas sutis de cacau amargo.',
+        price: 'R$ 1.950'
+    },
+    {
+        emoji: '🫙', origin: 'Toscana, Itália',
+        name: 'Sassicaia', vintage: '2018 · Tenuta San Guido',
+        desc: 'O precursor dos Super Toscanos. Cabernet Sauvignon com mineralidade marcante e longevidade notável.',
+        price: 'R$ 1.650'
+    },
+    {
+        emoji: '🥂', origin: 'Champagne, França',
+        name: 'Dom Pérignon', vintage: '2013 · Moët & Chandon',
+        desc: 'Champagne de safra excepcional com borbulhas delicadas e notas complexas de brioche tostado e limão siciliano.',
+        price: 'R$ 3.200'
+    },
+    {
+        emoji: '🍷', origin: 'Barossa Valley, Austrália',
+        name: 'Penfolds Grange', vintage: '2017 · Shiraz Multi-regional',
+        desc: 'Expressão máxima do Shiraz australiano com frutos negros concentrados, pimenta preta e carvalho integrado.',
+        price: 'R$ 2.100'
+    },
+];
+
+// Navigation
+function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function goHome() { showScreen('screen-gate'); }
+
+function switchTab(tab) {
+    document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-pane').forEach(c => c.classList.remove('active'));
+    document.getElementById(`tab-btn-${tab}`).classList.add('active');
+    document.getElementById(`tab-${tab}`).classList.add('active');
+}
+
+function switchAuditTab(tab) {
+    document.querySelectorAll('.audit-selector-btn').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.audit-content-panel').forEach(p => p.classList.remove('active'));
+    event.target.classList.add('active');
+    document.getElementById(`audit-panel-${tab}`).classList.add('active');
+}
+
+// Verification Flow
+async function startVerification() {
+    showScreen('screen-verify');
+    switchTab('manual');
+    document.getElementById('verify-progress').classList.add('hidden');
+    document.getElementById('vp-token-input').value = '';
+
+    try {
+        const resp = await fetch(`${VERIFIER_URL}/verifier/challenge`);
+        const data = await resp.json();
+        currentSessionId = data.session_id;
+        currentNonce = data.nonce;
+
+        document.getElementById('display-session-id').textContent = data.session_id;
+        document.getElementById('display-nonce').textContent = data.nonce;
+    } catch (e) {
+        document.getElementById('display-session-id').textContent = 'Erro de conexão';
+    }
+}
+
+async function startSimulation() {
+    showScreen('screen-verify');
+    switchTab('simulate');
+    document.getElementById('verify-progress').classList.add('hidden');
+}
+
+async function submitVpToken() {
+    const vpToken = document.getElementById('vp-token-input').value.trim();
+    if (!vpToken || !currentSessionId) return;
+
+    showProgress('Verificando credencial...');
+
+    try {
+        const resp = await fetch(`${VERIFIER_URL}/verifier/present`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ session_id: currentSessionId, vp_token: vpToken })
+        });
+        const result = await resp.json();
+        lastVerificationResult = result;
+        await animateSteps(result.steps || []);
+        setTimeout(() => handleResult(result), 500);
+    } catch (e) {
+        hideProgress();
+    }
+}
+
+async function runSimulation() {
+    const cpf = document.getElementById('sim-cpf').value.trim();
+    const name = document.getElementById('sim-name').value.trim();
+    const birth = document.getElementById('sim-birth').value.trim();
+
+    const logEl = document.getElementById('sim-log');
+    logEl.style.display = 'block';
+    logEl.textContent = 'Iniciando simulação...';
+
+    showProgress('Executando pipeline de simulação...');
+
+    try {
+        const url = `${VERIFIER_URL}/verifier/simulate?cpf=${encodeURIComponent(cpf)}&name=${encodeURIComponent(name)}&birth_date=${encodeURIComponent(birth)}`;
+        const resp = await fetch(url, { method: 'POST' });
+        const result = await resp.json();
+        lastVerificationResult = result;
+
+        if (result.simulation_log) {
+            logEl.textContent = result.simulation_log.join('\n');
+        }
+
+        await animateSteps(result.steps || []);
+        setTimeout(() => handleResult(result), 600);
+    } catch (e) {
+        hideProgress();
+    }
+}
+
+function showProgress(text) {
+    const prog = document.getElementById('verify-progress');
+    prog.classList.remove('hidden');
+    document.getElementById('verify-progress-text').textContent = text;
+    document.getElementById('steps-container').innerHTML = '';
+}
+
+function hideProgress() {
+    document.getElementById('verify-progress').classList.add('hidden');
+}
+
+async function animateSteps(steps) {
+    const container = document.getElementById('steps-container');
+    container.innerHTML = '';
+
+    for (let i = 0; i < steps.length; i++) {
+        await new Promise(r => setTimeout(r, 250));
+        const st = steps[i];
+        const el = document.createElement('div');
+        el.className = `step-row ${st.passed ? 'pass' : 'fail'}`;
+        el.innerHTML = `
+            <span>${st.passed ? '✅' : '❌'}</span>
+            <div>
+                <strong style="color:var(--text-heading);">${st.step}</strong>
+                <div style="font-size:0.78rem; color:var(--text-muted);">${st.detail}</div>
+            </div>
+        `;
+        container.appendChild(el);
+    }
+}
+
+function handleResult(result) {
+    if (result.approved) {
+        showCatalog(result);
+    } else {
+        showDenied(result);
+    }
+}
+
+function showCatalog(result) {
+    showScreen('screen-catalog');
+
+    if (result.holder_did) {
+        document.getElementById('proof-holder-did').textContent = `DID: ${result.holder_did.substring(0, 42)}...`;
+    }
+
+    // Product Grid
+    const grid = document.getElementById('wine-grid');
+    grid.innerHTML = '';
+    WINES.forEach(w => {
+        const card = document.createElement('div');
+        card.className = 'wine-product-card';
+        card.innerHTML = `
+            <div class="wine-card-media">
+                <span>${w.emoji}</span>
+                <span class="wine-origin-tag">${w.origin}</span>
+            </div>
+            <div class="wine-card-details">
+                <div class="wine-name">${w.name}</div>
+                <div class="wine-vintage">${w.vintage}</div>
+                <div class="wine-desc">${w.desc}</div>
+                <div class="wine-price-row">
+                    <span class="wine-price-value">${w.price}</span>
+                    <button class="btn-add-cart-solid" onclick="addToCart('${w.name}')">Adicionar</button>
+                </div>
+            </div>
+        `;
+        grid.appendChild(card);
+    });
+
+    // Populate Audit Log Timeline
+    const timelineEl = document.getElementById('audit-flow-timeline');
+    timelineEl.innerHTML = '';
+    if (result.simulation_log && result.simulation_log.length > 0) {
+        result.simulation_log.forEach((logItem, idx) => {
+            const row = document.createElement('div');
+            row.className = 'flow-log-card';
+            row.innerHTML = `
+                <span class="flow-log-index">${idx + 1}</span>
+                <span>${logItem}</span>
+            `;
+            timelineEl.appendChild(row);
+        });
+    } else {
+        timelineEl.innerHTML = `<div class="flow-log-card"><span>✓ Apresentação direta de VP Token validada.</span></div>`;
+    }
+
+    // Populate Checks Grid
+    const checksGrid = document.getElementById('audit-checks-grid');
+    checksGrid.innerHTML = '';
+    if (result.steps) {
+        result.steps.forEach(st => {
+            const card = document.createElement('div');
+            card.className = 'crypto-check-card';
+            card.innerHTML = `
+                <div class="crypto-check-title">
+                    <span>${st.step}</span>
+                    <span style="color:${st.passed ? '#7cdb8c' : '#e25c6e'}; font-size:0.75rem;">${st.passed ? 'PASSED' : 'FAILED'}</span>
+                </div>
+                <div class="crypto-check-desc">${st.detail}</div>
+            `;
+            checksGrid.appendChild(card);
+        });
+    }
+
+    // JSON Inspector
+    document.getElementById('audit-json-box').textContent = JSON.stringify(result, null, 2);
+}
+
+function showDenied(result) {
+    document.getElementById('denied-reason').textContent = result.reason || 'Verificação de maioridade não aprovada.';
+    showScreen('screen-denied');
+}
+
+function addToCart(name) {
+    const btn = event.target;
+    btn.textContent = '✓ Adicionado';
+    btn.style.background = '#285430';
+    setTimeout(() => {
+        btn.textContent = 'Adicionar';
+        btn.style.background = '';
+    }, 1800);
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,32 @@
+{
+  "did": "did:brazkil:5028b7be-b861-4c01-8225-b74bdfe38be4",
+  "did_document": {
+    "@context": [
+      "https://www.w3.org/ns/did/v1",
+      "https://w3id.org/security/suites/jws-2020/v1"
+    ],
+    "id": "did:brazkil:5028b7be-b861-4c01-8225-b74bdfe38be4",
+    "controller": "did:brazkil:5028b7be-b861-4c01-8225-b74bdfe38be4",
+    "name": "Middleware BraZKIL",
+    "verificationMethod": [
+      {
+        "id": "did:brazkil:5028b7be-b861-4c01-8225-b74bdfe38be4#key-1",
+        "type": "JsonWebKey2020",
+        "controller": "did:brazkil:5028b7be-b861-4c01-8225-b74bdfe38be4",
+        "publicKeyJwk": {
+          "kty": "EC",
+          "crv": "P-256",
+          "x": "tq7Y3HyaGROhtZbqqqtFShHYWr2A6dOdmOXyNaGtkVs",
+          "y": "EyUITJieSuNvifoutGGF1Bse_JslEm4vMPs8FoDWe8s"
+        }
+      }
+    ],
+    "authentication": [
+      "did:brazkil:5028b7be-b861-4c01-8225-b74bdfe38be4#key-1"
+    ],
+    "assertionMethod": [
+      "did:brazkil:5028b7be-b861-4c01-8225-b74bdfe38be4#key-1"
+    ]
+  },
+  "private_key_pem": "-----BEGIN PRIVATE KEY-----\nMIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgcXIoLyC/+M2g0U3J\n87b5S4GvlgnpnXYBvxKU4M7U2N+hRANCAAS2rtjcfJoZE6G1luqqq0VKEdhavYDp\n052Y5fI1oa2RWxMlCEyYnkrjb4n6LrRhhdQbHvybJRJuLzD7PBaA1nvL\n-----END PRIVATE KEY-----\n"
+}
