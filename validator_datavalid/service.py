@@ -94,7 +94,7 @@ async def process_datavalid_validation(request: DatavalidValidationRequest) -> D
         response_data = {
             "rfb_existe": True,
             "rfb": {
-                "situacao_cpf": "REGULAR",
+                "situacao_cpf": True,
                 "nome_similaridade": 1.0,
                 "data_nascimento": True
             }

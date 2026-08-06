@@ -601,8 +601,12 @@ async def credential_endpoint(
     # Consume the nonce
     del _active_nonces[nonce]
 
-    if proof_payload.get("aud") != ISSUER_BASE_URL:
-        raise HTTPException(status_code=400, detail="Audiência (aud) do proof JWT inválida.")
+    aud = proof_payload.get("aud")
+    if isinstance(aud, list):
+        if ISSUER_BASE_URL not in aud:
+            raise HTTPException(status_code=400, detail=f"Audiência (aud) do proof JWT inválida. Esperado {ISSUER_BASE_URL}, obtido {aud}")
+    elif aud != ISSUER_BASE_URL:
+        raise HTTPException(status_code=400, detail=f"Audiência (aud) do proof JWT inválida. Esperado {ISSUER_BASE_URL}, obtido {aud}")
 
     try:
         # Agora sim, geramos a SD-JWT dinamicamente com o DID e a JWK revelados pela carteira

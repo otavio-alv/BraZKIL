@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
     <style>
         /* ================================================================
@@ -767,20 +768,29 @@
             <button class="tab-btn" id="tab-btn-simulate" onclick="switchTab('simulate')">Simulação Automática</button>
         </div>
 
-        <!-- Manual Tab -->
+        <!-- Manual Tab (Agora OID4VP QR Code) -->
         <div class="tab-pane active" id="tab-manual">
-            <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:4px;">SESSION ID</div>
-            <div class="code-box" id="display-session-id">Gerando sessão...</div>
+            <div style="text-align: center; margin-bottom: 24px;">
+                <p style="font-size:0.9rem; color:var(--text-body); margin-bottom:16px;">
+                    Escaneie o código abaixo com sua carteira <strong>walt.id</strong> (ou outra compatível com OID4VP):
+                </p>
+                <!-- QR Code Container -->
+                <div id="qrcode-container" style="background: white; padding: 16px; border-radius: 8px; display: inline-block; margin-bottom: 16px;"></div>
+                <div style="font-size:0.75rem; color:var(--brand-gold); word-break: break-all; margin-bottom:16px;" id="display-oid4vp-uri"></div>
+                <p style="font-size:0.85rem; color:var(--text-muted);">
+                    Aguardando apresentação... (redirecionamento automático)
+                </p>
+            </div>
 
-            <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:4px;">DESAFIO (NONCE)</div>
-            <div class="code-box" id="display-nonce">—</div>
+            <hr style="border:0; border-top:1px solid var(--border-subtle); margin:24px 0;">
 
-            <label style="font-size:0.8rem; color:var(--text-body); display:block; margin-bottom:6px;">
-                VP Token (<code>SD-JWT~disclosure~KB-JWT</code>):
-            </label>
-            <textarea id="vp-token-input" class="form-input" style="height:110px; font-family:monospace;" placeholder="eyJ..."></textarea>
-
-            <button class="btn-solid-primary" onclick="submitVpToken()">Confirmar Apresentação</button>
+            <div style="text-align:left;">
+                <label style="font-size:0.8rem; color:var(--text-body); display:block; margin-bottom:6px;">
+                    Ou cole manualmente o VP Token (Fallback):
+                </label>
+                <textarea id="vp-token-input" class="form-input" style="height:60px; font-family:monospace; font-size:0.75rem;" placeholder="eyJ..."></textarea>
+                <button class="btn-outline-secondary" onclick="submitVpToken()" style="width:100%;">Confirmar Manualmente</button>
+            </div>
         </div>
 
         <!-- Simulation Tab -->
@@ -903,6 +913,7 @@
 let currentSessionId = null;
 let currentNonce = null;
 let lastVerificationResult = null;
+let pollingInterval = null;
 const VERIFIER_URL = window.location.origin;
 
 const WINES = [
@@ -967,6 +978,9 @@ async function startVerification() {
     switchTab('manual');
     document.getElementById('verify-progress').classList.add('hidden');
     document.getElementById('vp-token-input').value = '';
+    document.getElementById('qrcode-container').innerHTML = '';
+    
+    if (pollingInterval) clearInterval(pollingInterval);
 
     try {
         const resp = await fetch(`${VERIFIER_URL}/verifier/challenge`);
@@ -974,10 +988,49 @@ async function startVerification() {
         currentSessionId = data.session_id;
         currentNonce = data.nonce;
 
-        document.getElementById('display-session-id').textContent = data.session_id;
-        document.getElementById('display-nonce').textContent = data.nonce;
+        // Generate OID4VP URI
+        const requestUri = encodeURIComponent(`${VERIFIER_URL}/verifier/request/${currentSessionId}`);
+        const clientId = encodeURIComponent(VERIFIER_URL);
+        const oid4vpUri = `openid4vp://?client_id=${clientId}&request_uri=${requestUri}`;
+        
+        document.getElementById('display-oid4vp-uri').textContent = oid4vpUri;
+        
+        // Generate QR Code
+        new QRCode(document.getElementById("qrcode-container"), {
+            text: oid4vpUri,
+            width: 256,
+            height: 256,
+            colorDark : "#000000",
+            colorLight : "#ffffff",
+            correctLevel : QRCode.CorrectLevel.L
+        });
+
+        // Start Polling
+        pollingInterval = setInterval(pollSessionStatus, 2000);
+
     } catch (e) {
-        document.getElementById('display-session-id').textContent = 'Erro de conexão';
+        document.getElementById('display-oid4vp-uri').textContent = 'Erro ao gerar sessão.';
+    }
+}
+
+async function pollSessionStatus() {
+    if (!currentSessionId) return;
+    try {
+        const resp = await fetch(`${VERIFIER_URL}/verifier/session/${currentSessionId}`);
+        const data = await resp.json();
+        
+        if (data.approved !== false || data.reason !== "Aguardando apresentação da credencial...") {
+            // Sessão processada!
+            clearInterval(pollingInterval);
+            pollingInterval = null;
+            lastVerificationResult = data;
+            
+            showProgress('Processando credencial recebida...');
+            await animateSteps(data.steps || []);
+            setTimeout(() => handleResult(data), 500);
+        }
+    } catch (e) {
+        console.error("Erro no polling:", e);
     }
 }
 

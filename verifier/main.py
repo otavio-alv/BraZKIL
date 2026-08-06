@@ -47,7 +47,7 @@ from verifier.verify import verify_presentation
 # =============================================================================
 
 VDR_URL = os.getenv("VDR_URL", "http://127.0.0.1:8001")
-ISSUER_URL = os.getenv("ISSUER_URL", "http://127.0.0.1:8002")
+ISSUER_URL = os.getenv("ISSUER_URL", os.getenv("ISSUER_BASE_URL", "http://127.0.0.1:8002"))
 VERIFIER_BASE_URL = os.getenv("VERIFIER_BASE_URL", "http://127.0.0.1:8003").strip().rstrip("/")
 
 WINE_SHOP_HTML_PATH = os.path.join(os.path.dirname(__file__), "wine_shop.html")
@@ -174,12 +174,66 @@ async def get_challenge():
 
 
 # =============================================================================
+# GET /verifier/request/{session_id} — OID4VP Authorization Request
+# =============================================================================
+
+@app.get("/verifier/request/{session_id}", summary="Retorna o Authorization Request OID4VP JSON para a Wallet")
+async def get_authorization_request(session_id: str):
+    """
+    Endpoint acessado pela Wallet após escanear o QR Code (via request_uri).
+    Retorna os parâmetros de autorização, incluindo a Presentation Definition.
+    """
+    session = _sessions.get(session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail=f"Sessão '{session_id}' não encontrada ou expirada.")
+
+    if session.status != "PENDING":
+        raise HTTPException(
+            status_code=409,
+            detail=f"Sessão '{session_id}' já processada."
+        )
+
+    return JSONResponse({
+        "response_type": "vp_token",
+        "client_id": VERIFIER_BASE_URL,
+        "response_mode": "direct_post",
+        "response_uri": f"{VERIFIER_BASE_URL}/verifier/present",
+        "nonce": session.nonce,
+        "state": session_id,
+        "presentation_definition": {
+            "id": f"brazkil-age-verification-{session_id}",
+            "input_descriptors": [
+                {
+                    "id": "age_over_18_descriptor",
+                    "format": {
+                        "vc+sd-jwt": {}
+                    },
+                    "constraints": {
+                        "fields": [
+                            {
+                                "path": ["$.age_over_18"],
+                                "filter": {"type": "boolean", "const": True}
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "client_metadata": {
+            "client_name": "Autentico Vini — Adega Fine Wines",
+            "logo_uri": f"{VERIFIER_BASE_URL}/favicon.ico",
+            "client_purpose": "Precisamos verificar se você é maior de 18 anos para acesso à adega."
+        }
+    })
+
+
+# =============================================================================
 # POST /verifier/present — Recebe e Verifica o VP Token
 # =============================================================================
 
 @app.post("/verifier/present", response_model=VerificationResult,
           summary="Recebe o VP Token (SD-JWT + KB-JWT) e executa verificação completa")
-async def present_credential(payload: VerifierPresentationPayload):
+async def present_credential(request: Request):
     """
     Endpoint principal do fluxo OID4VP.
     Recebe o VP Token do Holder (ou da UI da loja) e executa o pipeline completo:
@@ -188,7 +242,23 @@ async def present_credential(payload: VerifierPresentationPayload):
       3. Integridade dos disclosures (SHA-256)
       4. Holder Binding JWT (nonce + aud + cnf.jwk)
     """
-    session_id = payload.session_id
+    content_type = request.headers.get("Content-Type", "")
+    if "application/json" in content_type:
+        data = await request.json()
+        session_id = data.get("session_id")
+        vp_token = data.get("vp_token")
+    elif "application/x-www-form-urlencoded" in content_type:
+        body = await request.body()
+        from urllib.parse import parse_qs
+        form_data = parse_qs(body.decode("utf-8"))
+        session_id = form_data.get("state", [None])[0]  # OID4VP usa state para correlacionar a sessão
+        vp_token = form_data.get("vp_token", [None])[0]
+    else:
+        raise HTTPException(status_code=415, detail="Unsupported Media Type")
+        
+    if not session_id or not vp_token:
+        raise HTTPException(status_code=400, detail="session_id/state e vp_token são obrigatórios.")
+
     session = _sessions.get(session_id)
 
     if not session:
@@ -204,7 +274,7 @@ async def present_credential(payload: VerifierPresentationPayload):
 
     # Executar pipeline completo de verificação
     result = verify_presentation(
-        vp_token=payload.vp_token,
+        vp_token=vp_token,
         expected_nonce=session.nonce,
         verifier_url=VERIFIER_BASE_URL,
         vdr_url=VDR_URL,
