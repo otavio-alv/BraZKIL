@@ -252,6 +252,11 @@ O script mata processos `uvicorn` anteriores, inicia VDR, Validator, Issuer e Ve
    - `http://127.0.0.1:8001/vdr/audits`
    - `http://127.0.0.1:8001/vdr/did/{did}`
    - `http://127.0.0.1:8001/vdr/credentials/status/{credential_id}`
+  
+### Demonstração
+
+https://github.com/user-attachments/assets/52573809-ec68-45da-9f36-845a1eb5c45f
+
 
 # Experimentos
 
