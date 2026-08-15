@@ -26,16 +26,13 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 
 import httpx
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import JSONResponse, HTMLResponse
+from fastapi.responses import JSONResponse, HTMLResponse, PlainTextResponse
 from fastapi.middleware.cors import CORSMiddleware
+from jose import jwt as jose_jwt
+from cryptography.hazmat.primitives.serialization import load_pem_private_key
+from cryptography.hazmat.backends import default_backend
 
 from verifier.schema import (
-    PresentationRequest,
-    PresentationDefinition,
-    PresentationDefinitionDescriptor,
-    PresentationDefinitionConstraint,
-    PresentationDefinitionField,
-    VerifierPresentationPayload,
     VerificationResult,
     VerificationStep,
     SessionState,
@@ -47,10 +44,15 @@ from verifier.verify import verify_presentation
 # =============================================================================
 
 VDR_URL = os.getenv("VDR_URL", "http://127.0.0.1:8001")
-ISSUER_URL = os.getenv("ISSUER_URL", os.getenv("ISSUER_BASE_URL", "http://127.0.0.1:8002"))
+ISSUER_URL = os.getenv("ISSUER_URL", os.getenv("ISSUER_BASE_URL", "http://127.0.0.1:8002")).strip().rstrip("/")
 VERIFIER_BASE_URL = os.getenv("VERIFIER_BASE_URL", "http://127.0.0.1:8003").strip().rstrip("/")
 
+# Deve casar com VC_TYPE_URL em issuer/sd_jwt.py (claim 'vct' das credenciais emitidas) —
+# usado no dcql_query para restringir a busca ao tipo de credencial BraZKIL.
+ISSUER_VC_TYPE_URL = f"{ISSUER_URL}/BraZKIL_AgeOver18"
+
 WINE_SHOP_HTML_PATH = os.path.join(os.path.dirname(__file__), "wine_shop.html")
+VERIFIER_ENV_FILE = os.path.join(os.path.dirname(__file__), ".verifier_identity.json")
 
 # =============================================================================
 # Estado em memória (sessões OID4VP)
@@ -58,6 +60,63 @@ WINE_SHOP_HTML_PATH = os.path.join(os.path.dirname(__file__), "wine_shop.html")
 
 # { session_id: SessionState }
 _sessions: dict[str, SessionState] = {}
+
+
+# =============================================================================
+# Bootstrap: carrega ou cria a identidade do Verifier (para assinar Request Objects)
+# =============================================================================
+
+def _load_or_create_verifier_identity() -> dict:
+    """
+    Carteiras OID4VP 1.0 (como a walt.id) exigem que o Authorization Request resolvido
+    via request_uri seja um JWT assinado (Request Object) e que o 'client_id' use um dos
+    prefixos padronizados (RFC do OpenID4VP 1.0 §5.9.3) — 'redirect_uri:' é proibido para
+    requests assinados, então usamos 'decentralized_identifier:<did>'. A carteira resolve
+    esse DID com seu próprio serviço de DIDs (não o VDR do BraZKIL), que só sabe resolver
+    métodos padrão como did:jwk — daí usarmos did:jwk aqui em vez do did:brazkil custom.
+    O 'kid' é embutido na própria JWK (convenção que a walt.id também usa) e repetido no
+    header do JWT para casar com o key lookup feito na verificação da assinatura.
+    """
+    import json
+    import uuid as _uuid
+    from shared.did import public_key_to_jwk
+    from cryptography.hazmat.primitives.asymmetric.ec import generate_private_key, SECP256R1
+    from cryptography.hazmat.primitives.serialization import Encoding, PrivateFormat, NoEncryption
+
+    if os.path.exists(VERIFIER_ENV_FILE):
+        with open(VERIFIER_ENV_FILE, "r") as f:
+            identity = json.load(f)
+        print(f"[VERIFIER] Identidade carregada: DID={identity['did']}")
+        return identity
+
+    print("[VERIFIER] Primeira execução — gerando novo did:jwk para assinatura de Request Objects...")
+    private_key = generate_private_key(SECP256R1(), default_backend())
+    public_key = private_key.public_key()
+
+    kid = str(_uuid.uuid4())
+    jwk = public_key_to_jwk(public_key)
+    jwk["kid"] = kid
+
+    jwk_json = json.dumps(jwk, separators=(",", ":"))
+    did = "did:jwk:" + base64.urlsafe_b64encode(jwk_json.encode("utf-8")).rstrip(b"=").decode("ascii")
+
+    private_key_pem = private_key.private_bytes(
+        encoding=Encoding.PEM,
+        format=PrivateFormat.PKCS8,
+        encryption_algorithm=NoEncryption(),
+    ).decode()
+
+    identity = {"did": did, "kid": kid, "jwk": jwk, "private_key_pem": private_key_pem}
+    with open(VERIFIER_ENV_FILE, "w") as f:
+        json.dump(identity, f, indent=2)
+    print(f"[VERIFIER] DID gerado e persistido: {did}")
+    return identity
+
+
+VERIFIER_IDENTITY = _load_or_create_verifier_identity()
+
+# client_id no formato prefixado exigido pelo OpenID4VP 1.0 (ver docstring acima)
+VERIFIER_CLIENT_ID = f"decentralized_identifier:{VERIFIER_IDENTITY['did']}"
 
 
 # =============================================================================
@@ -144,44 +203,47 @@ async def get_challenge():
     session = SessionState(session_id=session_id, nonce=nonce, status="PENDING")
     _sessions[session_id] = session
 
-    presentation_request = PresentationRequest(
-        session_id=session_id,
-        response_type="vp_token",
-        response_mode="direct_post",
-        client_id=VERIFIER_BASE_URL,
-        nonce=nonce,
-        presentation_definition=PresentationDefinition(
-            id=f"brazkil-age-verification-{session_id}",
-            input_descriptors=[
-                PresentationDefinitionDescriptor(
-                    id="age_over_18_descriptor",
-                    format="vc+sd-jwt",
-                    constraints=PresentationDefinitionConstraint(
-                        fields=[
-                            PresentationDefinitionField(
-                                path=["$.age_over_18"],
-                                filter={"type": "boolean", "const": True}
-                            )
-                        ]
-                    )
-                )
-            ]
-        )
-    )
-
     print(f"[VERIFIER] Sessão {session_id} criada. Nonce: {nonce[:12]}...")
-    return presentation_request
+
+    # DCQL (OpenID4VP 1.0, Seção 6) — precisa casar com a query embutida no Authorization
+    # Request que a UI monta a partir destes campos (ver wine_shop.html::startVerification).
+    return JSONResponse({
+        "session_id": session_id,
+        "response_type": "vp_token",
+        "response_mode": "direct_post",
+        "client_id": VERIFIER_CLIENT_ID,
+        "response_uri": f"{VERIFIER_BASE_URL}/verifier/present",
+        "nonce": nonce,
+        "dcql_query": {
+            "credentials": [
+                {
+                    "id": "age_over_18_credential",
+                    "format": "dc+sd-jwt",
+                    "meta": {"vct_values": [ISSUER_VC_TYPE_URL]},
+                    "claims": [
+                        {"path": ["age_over_18"], "values": [True]}
+                    ]
+                }
+            ]
+        },
+        "client_metadata": {
+            "client_name": "Autentico Vini — Adega Fine Wines",
+            "logo_uri": f"{VERIFIER_BASE_URL}/favicon.ico",
+        }
+    })
 
 
 # =============================================================================
 # GET /verifier/request/{session_id} — OID4VP Authorization Request
 # =============================================================================
 
-@app.get("/verifier/request/{session_id}", summary="Retorna o Authorization Request OID4VP JSON para a Wallet")
+@app.get("/verifier/request/{session_id}", summary="Retorna o Authorization Request OID4VP (JWT assinado) para a Wallet")
 async def get_authorization_request(session_id: str):
     """
     Endpoint acessado pela Wallet após escanear o QR Code (via request_uri).
-    Retorna os parâmetros de autorização, incluindo a Presentation Definition.
+    Retorna os parâmetros de autorização, incluindo a Presentation Definition,
+    como um Request Object JWT assinado (RFC 9101) — carteiras OID4VP resolvem
+    request_uri esperando um JWT compacto, não um JSON puro.
     """
     session = _sessions.get(session_id)
     if not session:
@@ -193,29 +255,24 @@ async def get_authorization_request(session_id: str):
             detail=f"Sessão '{session_id}' já processada."
         )
 
-    return JSONResponse({
+    claims = {
         "response_type": "vp_token",
-        "client_id": VERIFIER_BASE_URL,
+        "client_id": VERIFIER_CLIENT_ID,
         "response_mode": "direct_post",
         "response_uri": f"{VERIFIER_BASE_URL}/verifier/present",
         "nonce": session.nonce,
         "state": session_id,
-        "presentation_definition": {
-            "id": f"brazkil-age-verification-{session_id}",
-            "input_descriptors": [
+        # DCQL (OpenID4VP 1.0, Seção 6) — a carteira walt.id "v2" só casa credenciais
+        # via dcql_query; presentation_definition (DIF PE) é ignorado nesse fluxo.
+        "dcql_query": {
+            "credentials": [
                 {
-                    "id": "age_over_18_descriptor",
-                    "format": {
-                        "vc+sd-jwt": {}
-                    },
-                    "constraints": {
-                        "fields": [
-                            {
-                                "path": ["$.age_over_18"],
-                                "filter": {"type": "boolean", "const": True}
-                            }
-                        ]
-                    }
+                    "id": "age_over_18_credential",
+                    "format": "dc+sd-jwt",
+                    "meta": {"vct_values": [ISSUER_VC_TYPE_URL]},
+                    "claims": [
+                        {"path": ["age_over_18"], "values": [True]}
+                    ]
                 }
             ]
         },
@@ -224,7 +281,21 @@ async def get_authorization_request(session_id: str):
             "logo_uri": f"{VERIFIER_BASE_URL}/favicon.ico",
             "client_purpose": "Precisamos verificar se você é maior de 18 anos para acesso à adega."
         }
-    })
+    }
+
+    verifier_private_key = load_pem_private_key(
+        VERIFIER_IDENTITY["private_key_pem"].encode(),
+        password=None,
+        backend=default_backend(),
+    )
+    request_object_jwt = jose_jwt.encode(
+        claims,
+        verifier_private_key,
+        algorithm="ES256",
+        headers={"typ": "oauth-authz-req+jwt", "kid": VERIFIER_IDENTITY["kid"]},
+    )
+
+    return PlainTextResponse(content=request_object_jwt, media_type="application/oauth-authz-req+jwt")
 
 
 # =============================================================================
@@ -259,6 +330,18 @@ async def present_credential(request: Request):
     if not session_id or not vp_token:
         raise HTTPException(status_code=400, detail="session_id/state e vp_token são obrigatórios.")
 
+    # OID4VP com DCQL (usado por carteiras como a walt.id) envia o vp_token como um objeto
+    # JSON mapeando cada credential_query_id (definido no nosso dcql_query) para um array de
+    # apresentações: {"age_over_18_credential": ["<sd-jwt>~<disclosures>~<kb-jwt>"]}, em vez da
+    # string de apresentação única esperada pelo pipeline (formato DIF PE / apresentação manual).
+    if isinstance(vp_token, str) and vp_token.lstrip().startswith("{"):
+        try:
+            vp_token_obj = json.loads(vp_token)
+            first_entry = next(iter(vp_token_obj.values()))
+            vp_token = first_entry[0] if isinstance(first_entry, list) else first_entry
+        except (json.JSONDecodeError, StopIteration, KeyError, IndexError, TypeError):
+            pass  # Mantém vp_token original — o pipeline de verificação reportará o erro adequado.
+
     session = _sessions.get(session_id)
 
     if not session:
@@ -278,6 +361,7 @@ async def present_credential(request: Request):
         expected_nonce=session.nonce,
         verifier_url=VERIFIER_BASE_URL,
         vdr_url=VDR_URL,
+        expected_client_id=VERIFIER_CLIENT_ID,
     )
 
     # Injetar session_id no resultado

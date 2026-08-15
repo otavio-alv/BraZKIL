@@ -1,0 +1,12 @@
+{
+  "did": "did:jwk:eyJrdHkiOiJFQyIsImNydiI6IlAtMjU2IiwieCI6Im5ObDBobU1JZUdNcXo4b3FQeVl1QkhLRk1kYjd5cE50TlV5SGdTdlpaaWMiLCJ5IjoiWjRIVW92ZzZPNWZxU2lUMFhYanVNUG1rc2w2eENOQTludFlxUTM2aXRhTSIsImtpZCI6IjIxYTc4NTdkLWFiZDQtNDZiNy05MjY0LTFjNmVmYjBmMzI0NyJ9",
+  "kid": "21a7857d-abd4-46b7-9264-1c6efb0f3247",
+  "jwk": {
+    "kty": "EC",
+    "crv": "P-256",
+    "x": "nNl0hmMIeGMqz8oqPyYuBHKFMdb7ypNtNUyHgSvZZic",
+    "y": "Z4HUovg6O5fqSiT0XXjuMPmksl6xCNA9ntYqQ36itaM",
+    "kid": "21a7857d-abd4-46b7-9264-1c6efb0f3247"
+  },
+  "private_key_pem": "-----BEGIN PRIVATE KEY-----\nMIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgnGdkmcl8DbZRH9qV\nyk3T+0XIOWGeiJqRMEwgXvlikv6hRANCAASc2XSGYwh4YyrPyio/Ji4EcoUx1vvK\nk201TIeBK9lmJ2eB1KL4OjuX6kok9F147jD5pLJesQjQPZ7WKkN+orWj\n-----END PRIVATE KEY-----\n"
+}

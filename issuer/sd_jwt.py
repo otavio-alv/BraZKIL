@@ -39,6 +39,12 @@ VDR_BASE_URL = "http://127.0.0.1:8001"
 # Endpoint base do Issuer (para metadata OID4VCI — suporte a ngrok)
 ISSUER_BASE_URL = os.getenv("ISSUER_BASE_URL", "http://127.0.0.1:8002").strip().rstrip("/")
 
+# O claim 'vct' da spec SD-JWT VC deve ser uma URI resolvível (não um nome simples):
+# carteiras como a walt.id buscam metadados do tipo em <authority>/.well-known/vct<path>
+# (ver issuer/main.py::vct_type_metadata) — sem isso, a tela de oferta da carteira falha
+# silenciosamente ao tentar resolver o tipo da credencial.
+VC_TYPE_URL = f"{ISSUER_BASE_URL}/{VC_TYPE}"
+
 
 def _b64url_encode(data: bytes) -> str:
     """Codifica bytes em Base64URL sem padding."""
@@ -107,8 +113,8 @@ def generate_sd_jwt_vc(
         "exp": int(exp.timestamp()),
         "jti": f"urn:uuid:{credential_id}",
 
-        # Tipo de credencial SD-JWT VC
-        "vct": VC_TYPE,
+        # Tipo de credencial SD-JWT VC (URI resolvível — ver VC_TYPE_URL acima)
+        "vct": VC_TYPE_URL,
 
         # Array de hashes dos disclosures seletivos (nenhum dado pessoal em plaintext)
         "_sd": [hash_age, hash_birth],
@@ -141,8 +147,11 @@ def generate_sd_jwt_vc(
         headers={"typ": "vc+sd-jwt"}
     )
 
-    # 4. Serializar no formato SD-JWT: <jwt>~<disclosure1>~<disclosure2>
-    sd_jwt_serialized = f"{sd_jwt_token}~{disclosure_age_b64}~{disclosure_birth_b64}"
+    # 4. Serializar no formato SD-JWT: <jwt>~<disclosure1>~<disclosure2>~
+    # O '~' final é obrigatório pela spec SD-JWT (indica ausência de Key Binding JWT
+    # neste momento da emissão) — parsers estritos como o da carteira walt.id rejeitam
+    # a credencial sem ele.
+    sd_jwt_serialized = f"{sd_jwt_token}~{disclosure_age_b64}~{disclosure_birth_b64}~"
 
     return sd_jwt_serialized
 

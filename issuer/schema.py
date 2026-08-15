@@ -115,8 +115,24 @@ class CredentialRequest(BaseModel):
     )
 
 
+class IssuedCredential(BaseModel):
+    """Item de credencial no formato batch do OID4VCI 1.0 final (campo 'credentials')."""
+    credential: str = Field(
+        ...,
+        description="SD-JWT VC completa serializada no formato: header.payload.signature~disclosure1~disclosure2"
+    )
+
+
 class CredentialResponse(BaseModel):
-    """Resposta com a SD-JWT VC serializada e as disclosures em plaintext."""
+    """
+    Resposta com a SD-JWT VC serializada e as disclosures em plaintext.
+
+    Inclui tanto o formato singular do OID4VCI draft 11/13 (format/credential/c_nonce,
+    usado pela carteira walt.id "legada") quanto o formato batch do OID4VCI 1.0 final
+    (campo 'credentials', usado pela carteira walt.id "v2" — waltid-openid4vci), já que
+    os dois desserializadores Kotlin ignoram campos desconhecidos e cada carteira lê
+    apenas o formato que reconhece.
+    """
     format: str = Field(default="vc+sd-jwt")
     credential: str = Field(
         ...,
@@ -124,6 +140,10 @@ class CredentialResponse(BaseModel):
     )
     c_nonce: Optional[str] = Field(None, description="Novo c_nonce para rotação de chaves")
     c_nonce_expires_in: Optional[int] = Field(None)
+    credentials: Optional[list[IssuedCredential]] = Field(
+        None,
+        description="Formato batch (OID4VCI 1.0 final / compat. carteira walt.id v2): [{'credential': <sd-jwt>}]"
+    )
 
 
 # -----------------------------------------------------------------------------

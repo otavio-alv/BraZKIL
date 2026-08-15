@@ -14,6 +14,8 @@
 
 import os
 import sys
+import json
+import base64
 import uuid
 import httpx
 import secrets
@@ -36,7 +38,7 @@ from .schema import (
     NonceResponse,
 )
 from .policy import evaluate_issuance_policy
-from .sd_jwt import generate_sd_jwt_vc, ISSUER_BASE_URL
+from .sd_jwt import generate_sd_jwt_vc, ISSUER_BASE_URL, VC_TYPE, VC_TYPE_URL
 from jose import jwt as jose_jwt
 from jose.exceptions import JWTError
 from shared.did import resolve_public_key_from_did_document
@@ -357,37 +359,34 @@ async def issue_credential(request: IssuanceRequest):
 async def issuer_metadata():
     """
     Retorna o documento de metadados do Issuer conforme a spec OID4VCI.
-    A carteira usa esse endpoint para descobrir os endpoints do Issuer.
+    Formato compatível com walt.id v0.23 (sdk-libraries/oid4vc).
+
+    Nota sobre compatibilidade:
+      - O deserializador CredentialSupported do walt.id falha ao receber JsonArray
+        em campos como 'display' e 'claims[x].display' aninhados.
+      - proof_types_supported é obrigatório para o walt.id processar o flow.
+      - format: "dc+sd-jwt" é o valor reconhecido pelo walt.id para SD-JWT VCs.
+        "vc+sd-jwt" é o nome anterior da spec (draft < 13) e pode causar falha de parse.
     """
     return JSONResponse({
         "credential_issuer": ISSUER_BASE_URL,
         "credential_endpoint": f"{ISSUER_BASE_URL}/issuer/credential",
         "token_endpoint": f"{ISSUER_BASE_URL}/issuer/token",
         "nonce_endpoint": f"{ISSUER_BASE_URL}/issuer/nonce",
+        "authorization_servers": [ISSUER_BASE_URL],
         "credential_configurations_supported": {
             "BraZKIL_AgeOver18": {
-                "format": "vc+sd-jwt",
-                "vct": "BraZKIL_AgeOver18",
+                # dc+sd-jwt é o formato reconhecido pelo walt.id v0.23+
+                # (vc+sd-jwt era o nome no draft antigo da spec SD-JWT VC)
+                "format": "dc+sd-jwt",
+                "vct": VC_TYPE_URL,
+                "scope": "BraZKIL_AgeOver18",
                 "cryptographic_binding_methods_supported": ["jwk"],
                 "credential_signing_alg_values_supported": ["ES256"],
-                "display": [
-                    {
-                        "name": "BraZKIL — Comprovante de Maioridade",
-                        "locale": "pt-BR",
-                        "description": (
-                            "Credencial de maioridade emitida pelo Middleware BraZKIL "
-                            "com divulgação seletiva dos atributos age_over_18 e birthdate."
-                        )
-                    }
-                ],
-                "claims": {
-                    "age_over_18": {
-                        "display": [{"name": "Maior de 18 anos", "locale": "pt-BR"}],
-                        "sd": True
-                    },
-                    "birthdate": {
-                        "display": [{"name": "Data de nascimento", "locale": "pt-BR"}],
-                        "sd": True
+                # proof_types_supported é obrigatório pelo walt.id para iniciar o fluxo
+                "proof_types_supported": {
+                    "jwt": {
+                        "proof_signing_alg_values_supported": ["ES256"]
                     }
                 }
             }
@@ -414,6 +413,25 @@ async def oauth_metadata():
         ],
         "response_types_supported": ["token"],
         "token_endpoint_auth_methods_supported": ["none"]
+    })
+
+
+@app.get(f"/.well-known/vct/{VC_TYPE}",
+         summary="SD-JWT VC Type Metadata (resolução do claim 'vct')")
+async def vct_type_metadata():
+    """
+    Metadados do tipo de credencial, resolvidos a partir da URI usada no claim 'vct'
+    (draft-ietf-oauth-sd-jwt-vc). Carteiras como a walt.id buscam este documento em
+    <authority>/.well-known/vct<path-do-vct> antes de exibir a tela de aceite da oferta —
+    sem ele, a resolução do 'vct' falha e a tela fica em branco.
+    """
+    return JSONResponse({
+        "vct": VC_TYPE_URL,
+        "name": "BraZKIL — Comprovante de Maioridade",
+        "description": (
+            "Credencial de maioridade emitida pelo Middleware BraZKIL com divulgação "
+            "seletiva dos atributos age_over_18 e birthdate."
+        ),
     })
 
 
@@ -569,9 +587,14 @@ async def credential_endpoint(
             raise HTTPException(status_code=400, detail="Cabeçalho 'jwk' não encontrado no proof JWT.")
             
         unverified_claims = jose_jwt.get_unverified_claims(request.proof.jwt)
-        holder_did = unverified_claims.get("iss")
+        # O proof JWT do OID4VCI não é obrigado a carregar 'iss'/'sub' (a identidade do
+        # Holder vem da chave 'jwk'/'kid' no header) — carteiras como a walt.id não os
+        # enviam. Quando ausentes, derivamos um did:jwk a partir da própria jwk da prova,
+        # que é exatamente como a walt.id constrói o DID default da carteira.
+        holder_did = unverified_claims.get("iss") or unverified_claims.get("sub")
         if not holder_did:
-            raise HTTPException(status_code=400, detail="Claim 'iss' (DID do Holder) não encontrado no proof JWT.")
+            jwk_json = json.dumps(jwk_header, separators=(",", ":"))
+            holder_did = "did:jwk:" + base64.urlsafe_b64encode(jwk_json.encode("utf-8")).rstrip(b"=").decode("ascii")
 
         from jose import jwk as jose_jwk
         public_key = jose_jwk.construct(jwk_header, algorithm="ES256")
@@ -643,6 +666,9 @@ async def credential_endpoint(
         credential=sd_jwt,
         c_nonce=new_c_nonce,
         c_nonce_expires_in=300,
+        # Formato batch (OID4VCI 1.0 final) para compatibilidade com a carteira walt.id "v2"
+        # (waltid-openid4vci), que só lê o campo 'credentials' e ignora 'format'/'credential'.
+        credentials=[{"credential": sd_jwt}],
     )
 
 

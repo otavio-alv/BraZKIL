@@ -988,10 +988,20 @@ async function startVerification() {
         currentSessionId = data.session_id;
         currentNonce = data.nonce;
 
-        // Generate OID4VP URI
-        const requestUri = encodeURIComponent(`${VERIFIER_URL}/verifier/request/${currentSessionId}`);
-        const clientId = encodeURIComponent(VERIFIER_URL);
-        const oid4vpUri = `openid4vp://?client_id=${clientId}&request_uri=${requestUri}`;
+        // Generate OID4VP URI (Authorization Request inline via DCQL — não assinado/por
+        // referência: algumas carteiras, incluindo a walt.id v0.23, perdem o client_id ao
+        // reconstruir o request internamente ao usar request_uri com Request Object assinado)
+        const oid4vpParams = new URLSearchParams({
+            response_type: data.response_type,
+            client_id: data.client_id,
+            response_mode: data.response_mode,
+            response_uri: data.response_uri,
+            nonce: data.nonce,
+            state: data.session_id,
+            dcql_query: JSON.stringify(data.dcql_query),
+            client_metadata: JSON.stringify(data.client_metadata),
+        });
+        const oid4vpUri = `openid4vp://?${oid4vpParams.toString()}`;
         
         document.getElementById('display-oid4vp-uri').textContent = oid4vpUri;
         

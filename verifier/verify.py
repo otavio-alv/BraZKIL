@@ -67,6 +67,7 @@ def verify_presentation(
     expected_nonce: str,
     verifier_url: str,
     vdr_url: str,
+    expected_client_id: Optional[str] = None,
 ) -> VerificationResult:
     """
     Executa o pipeline completo de verificação de uma Verifiable Presentation.
@@ -74,8 +75,12 @@ def verify_presentation(
     Args:
         vp_token:       SD-JWT serializado: <jwt>~<disc1>~...~<KB-JWT>
         expected_nonce: Nonce gerado pelo Verifier para esta sessão (anti-replay)
-        verifier_url:   URL do Verifier (audiência esperada no Key Binding JWT)
+        verifier_url:   URL do Verifier (audiência esperada no Key Binding JWT do fluxo
+                         /verifier/simulate, que constrói o KB-JWT manualmente)
         vdr_url:        URL base do VDR para resolver DIDs e consultar status
+        expected_client_id: client_id (possivelmente prefixado, ex: 'decentralized_identifier:did:...')
+                         enviado no Authorization Request OID4VP — carteiras reais usam esse valor
+                         como audiência do KB-JWT, conforme a spec, em vez da URL simples.
 
     Returns:
         VerificationResult com o resultado de cada etapa e os claims revelados
@@ -346,14 +351,20 @@ def verify_presentation(
             ))
             return _fail(steps, "Nonce inválido — possível replay attack!", revealed_claims, holder_did, issuer_did, credential_id)
 
-        # 4e. Verificar audiência (aud) — deve ser o URL deste Verifier
+        # 4e. Verificar audiência (aud) — deve ser este Verifier: aceita tanto a URL simples
+        # (usada pelo fluxo /verifier/simulate, que monta o KB-JWT manualmente) quanto o
+        # client_id (possivelmente prefixado) enviado no Authorization Request OID4VP, que é
+        # o valor que carteiras reais (ex: walt.id) usam como audiência conforme a spec.
         kb_aud = kb_payload.get("aud")
-        if kb_aud != verifier_url:
+        valid_audiences = {verifier_url}
+        if expected_client_id:
+            valid_audiences.add(expected_client_id)
+        if kb_aud not in valid_audiences:
             steps.append(VerificationStep(
                 step="4_holder_binding",
                 passed=False,
                 detail=f"Audiência do Key Binding JWT ('{kb_aud}') não corresponde a este "
-                       f"Verifier ('{verifier_url}'). Possível credential redirect!"
+                       f"Verifier ({sorted(valid_audiences)}). Possível credential redirect!"
             ))
             return _fail(steps, "Audiência (aud) do KB-JWT inválida!", revealed_claims, holder_did, issuer_did, credential_id)
 
