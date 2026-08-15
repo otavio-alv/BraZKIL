@@ -123,7 +123,7 @@ Todas fixadas em `requirements.txt` e instaladas em um único passo (veja **Inst
 
 ## Serviços externos
 
-- **API de demonstração do Datavalid**: `https://apicenter.estaleiro.serpro.gov.br/documentacao/datavalid/demonstracao/`. O *Bearer token* de demonstração já está configurado no código.
+- **API de demonstração do Datavalid**: `https://apicenter.estaleiro.serpro.gobr/documentacao/datavalid/demonstracao/`. O *Bearer token* de demonstração já está configurado no código.
 - **Carteira walt.id**: `https://github.com/walt-id/waltid-identity` (código já vendorizado em `wallet/waltid-identity/`).
 
 # Preocupações com segurança
@@ -178,7 +178,9 @@ sudo usermod -aG docker "$USER"
 # depois, faça logout/login (ou: newgrp docker)
 ```
 
-O `start_brazkil.sh` já sobe a stack da wallet automaticamente (veja **Teste mínimo**), então este passo é opcional — mas baixar as imagens com antecedência evita esperar o download na primeira execução:
+O `start_brazkil.sh` já sobe a stack da wallet automaticamente (veja **Teste mínimo**), então este passo é opcional — mas preparar as imagens com antecedência evita esperar o download/build na primeira execução. Há três formas de obtê-las:
+
+**Opção A: baixar as imagens pré-construídas (mais rápido)**
 
 ```bash
 cd wallet/waltid-identity/docker-compose
@@ -186,13 +188,28 @@ docker compose pull
 cd ../../..
 ```
 
-Se preferir construir as imagens localmente a partir do código-fonte vendorizado (em vez de baixar imagens prontas):
+**Opção B: construir localmente a partir do código já vendorizado neste repositório**
 
 ```bash
 cd wallet/waltid-identity/docker-compose
 docker compose build
 cd ../../..
 ```
+
+**Opção C: clonar o repositório oficial do walt.id e construir a partir dele**
+
+Útil se você quiser a stack completa do walt.id fora do BraZKIL, ou testar uma versão diferente da vendorizada:
+
+```bash
+git clone https://github.com/walt-id/waltid-identity.git
+cd waltid-identity
+git checkout v0.22
+cd docker-compose
+docker compose up waltid-demo-wallet wallet-api2 --build
+cd ../..
+```
+
+> Se seguir a Opção C, aponte o `start_brazkil.sh` (ou execute a wallet manualmente) para esse diretório clonado em vez do vendorizado em `wallet/waltid-identity/`, já que são cópias independentes.
 
 ### Passo 5 — Dar permissão de execução ao script principal
 
@@ -274,7 +291,7 @@ Esta seção guia o avaliador na reprodução das **reivindicações funcionais 
 * **Instruções:**
   1. Acesse `http://127.0.0.1:8003` no navegador.
   2. Abra as ferramentas de desenvolvedor (F12 → Network).
-  3. Clique em **"Verificar Maioridade via BraZKIL"**.
+  3. Clique em **"Verificar Idade com Credencial BraZKIL"**.
   4. Inspecione o payload da rota `/verifier/present`.
 * **Verificação:** em `revealed_claims`, apenas `"age_over_18": true` aparece. `birthdate` permanece protegido pela árvore de hashes do SD-JWT.
 
@@ -284,10 +301,14 @@ Esta seção guia o avaliador na reprodução das **reivindicações funcionais 
 * **Objetivo:** demonstrar a recusa de uma credencial revogada na Status List do VDR.
 * **Comando:**
   ```bash
+  # 0. Obter o DID do Issuer em execução — é gerado por instância, o VDR
+  #    rejeita marcar status para um issuer_did que não esteja autorizado
+  ISSUER_DID=$(curl -s http://127.0.0.1:8002/health | python -c "import sys,json;print(json.load(sys.stdin)['did'])")
+
   # 1. Marcar a credencial como REVOKED no VDR (porta 8001)
   curl -s -X POST 'http://127.0.0.1:8001/vdr/credentials/status' \
     -H 'Content-Type: application/json' \
-    -d '{"credential_id": "TEST_CREDENTIAL_01", "issuer_did": "did:brazkil:issuer", "status": "REVOKED"}' | python -m json.tool
+    -d "{\"credential_id\": \"TEST_CREDENTIAL_01\", \"issuer_did\": \"$ISSUER_DID\", \"status\": \"REVOKED\"}" | python -m json.tool
 
   # 2. Consultar o status como o Verificador faria
   curl -s 'http://127.0.0.1:8001/vdr/credentials/status/TEST_CREDENTIAL_01' | python -m json.tool
